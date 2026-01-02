@@ -240,7 +240,8 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
       await guestService.batchUpdateGuests(updates);
 
       // Notify parent component for additional handling (notifications, state updates)
-      onSave(updates);
+      // Await to ensure all async operations complete before proceeding
+      await onSave(updates);
 
       setStep(3);
       setTimeout(() => {
