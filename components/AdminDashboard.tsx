@@ -434,6 +434,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
           </div>
                 )}
              </div>
+          </>
           )}
 
           {activeTab === 'photos' && (
