@@ -12,10 +12,10 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 
 ### **Overall Completion**
 - **Total Tasks**: 25
-- **Completed**: 2
+- **Completed**: 4
 - **In Progress**: 1
-- **Pending**: 22
-- **Overall Progress**: 12%
+- **Pending**: 20
+- **Overall Progress**: 20%
 
 ### **Phase Progress**
 - **Phase 1 (Foundation)**: 0% (0/6 tasks)
@@ -50,10 +50,10 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 ### **Phase 1: Foundation (Week 1-2)**
 
 #### **1.1 Collaboration Setup**
-- [ ] Initialize Git repository with proper structure
+- [x] Initialize Git repository with proper structure
 - [ ] Set up GitHub repository with collaboration permissions
-- [ ] Configure Cursor live sharing environment
-- [ ] Create contributing guidelines and branching strategy
+- [x] Configure Cursor live sharing environment
+- [x] Create contributing guidelines and branching strategy
 
 #### **1.2 Couple Profile Photo**
 - [ ] Create profile photo component with circular crop
