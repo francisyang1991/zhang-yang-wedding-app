@@ -12,10 +12,10 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 
 ### **Overall Completion**
 - **Total Tasks**: 25
-- **Completed**: 6
-- **In Progress**: 1
-- **Pending**: 18
-- **Overall Progress**: 28%
+- **Completed**: 8
+- **In Progress**: 0
+- **Pending**: 17
+- **Overall Progress**: 36%
 
 ### **Phase Progress**
 - **Phase 1 (Foundation)**: 0% (0/6 tasks)
@@ -56,9 +56,9 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 - [x] Create contributing guidelines and branching strategy
 
 #### **1.2 Couple Profile Photo**
-- [ ] Create profile photo component with circular crop
-- [ ] Position overlay on hero slideshow
-- [ ] Add hover effects and animations
+- [x] Create profile photo component with circular crop
+- [x] Position overlay on hero slideshow
+- [x] Add hover effects and animations
 - [ ] Implement admin photo upload functionality
 
 #### **1.3 Basic Photo Upload**
@@ -73,7 +73,7 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 - [x] Set up database schema for guests, photos, story_content
 - [x] Configure authentication for admin access
 - [x] Implement Row Level Security (RLS) policies
-- [ ] Run supabase-schema.sql in Supabase dashboard
+- [x] Run supabase-schema.sql in Supabase dashboard
 
 #### **2.2 Enhanced Guest Data Model**
 - [ ] Create comprehensive guest database tables
