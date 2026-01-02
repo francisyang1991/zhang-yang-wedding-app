@@ -178,7 +178,7 @@ const App: React.FC = () => {
            <Heart className="w-6 h-6 text-wedding-gold mx-auto mb-6" />
            <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-6">Stay With Us in Paradise</h2>
            <p className="text-gray-600 leading-relaxed mb-8 font-light text-lg">
-             We have secured a block of rooms at the stunning <strong>Andaz Maui</strong>. 
+             We have secured a block of rooms at the stunning <strong>Andaz Maui</strong> with a discounted rate compared to a public rate. 
              Xiaodong & Yuwen are providing a special gift to our guests to help with travel costs.
            </p>
            <div className="bg-white border border-wedding-gold/20 rounded-xl p-6 mb-8 shadow-sm">
