@@ -273,8 +273,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 )}
 
                 {!isLoadingGuests && (
-                {/* KPI Cards */}
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <>
+                  {/* KPI Cards */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
                 <div>
                    <p className="text-xs font-bold text-gray-400 uppercase">Total Invitees</p>
@@ -558,6 +559,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                    </div>
                 </div>
              </div>
+          </>
           )}
        </div>
     </div>
