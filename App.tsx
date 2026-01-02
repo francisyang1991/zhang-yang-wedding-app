@@ -13,6 +13,7 @@ import MenuPreview from './components/MenuPreview';
 import ScheduleModal from './components/ScheduleModal';
 import { Accommodation, Guest } from './types';
 import { photoService } from './services/photoService';
+import { guestService } from './services/guestService';
 import { Calendar, MapPin, Heart, Gift, Check, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
 
 const HERO_IMAGES = [
@@ -31,11 +32,9 @@ const App: React.FC = () => {
     ...MANUAL_HOTEL_OPTIONS
   ]);
   
-  // Persistence Layer: Load from LocalStorage or Fallback to Mock
-  const [guestList, setGuestList] = useState<Guest[]>(() => {
-    const saved = localStorage.getItem('wedding_guest_list');
-    return saved ? JSON.parse(saved) : MOCK_GUEST_LIST;
-  });
+  // Persistence Layer: Load from Supabase
+  const [guestList, setGuestList] = useState<Guest[]>([]);
+  const [isLoadingGuests, setIsLoadingGuests] = useState(true);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRsvpOpen, setIsRsvpOpen] = useState<boolean>(false);
@@ -56,10 +55,23 @@ const App: React.FC = () => {
   const onsite = accommodations.filter(a => a.category === 'Onsite');
   const budget = accommodations.filter(a => a.category === 'Budget');
 
-  // Persistence Effect: Save to LocalStorage whenever guestList changes
+  // Load guests from Supabase on mount
   useEffect(() => {
-    localStorage.setItem('wedding_guest_list', JSON.stringify(guestList));
-  }, [guestList]);
+    const loadGuests = async () => {
+      try {
+        const guests = await guestService.getAllGuests();
+        setGuestList(guests);
+      } catch (error) {
+        console.error('Error loading guests:', error);
+        // Fallback to mock data if Supabase fails
+        setGuestList(MOCK_GUEST_LIST);
+      } finally {
+        setIsLoadingGuests(false);
+      }
+    };
+
+    loadGuests();
+  }, []);
 
   // Hero Slideshow Effect
   useEffect(() => {
@@ -86,37 +98,48 @@ const App: React.FC = () => {
     fetchCouplePhoto();
   }, []);
 
-  const handleRsvpSave = (updates: { id: string; data: Partial<Guest> }[]) => {
-    setGuestList(prev => {
-      const newList = [...prev];
-      updates.forEach(update => {
-        const index = newList.findIndex(g => g.id === update.id);
-        if (index >= 0) {
-          newList[index] = { 
-            ...newList[index], 
-            ...update.data, 
-            lastUpdated: new Date().toISOString() 
-          };
-        } else {
-          const newGuest = {
-            id: update.id,
-            familyId: update.data.familyId || `fam-${Date.now()}`,
-            firstName: update.data.firstName || 'Guest',
-            lastName: update.data.lastName || '',
-            email: update.data.email,
-            rsvpStatus: update.data.rsvpStatus || 'Pending',
-            accommodation: update.data.accommodation,
-            roomDetail: update.data.roomDetail,
-            bookingMethod: update.data.bookingMethod,
-            mealChoice: update.data.mealChoice,
-            note: update.data.note,
-            lastUpdated: new Date().toISOString()
-          } as Guest;
-          newList.push(newGuest);
-        }
+  const handleRsvpSave = async (updates: { id: string; data: Partial<Guest> }[]) => {
+    try {
+      // Save to Supabase
+      await guestService.batchUpdateGuests(updates);
+
+      // Update local state by reloading from Supabase
+      const updatedGuests = await guestService.getAllGuests();
+      setGuestList(updatedGuests);
+    } catch (error) {
+      console.error('Error saving RSVP:', error);
+      // Fallback: Update local state optimistically
+      setGuestList(prev => {
+        const newList = [...prev];
+        updates.forEach(update => {
+          const index = newList.findIndex(g => g.id === update.id);
+          if (index >= 0) {
+            newList[index] = {
+              ...newList[index],
+              ...update.data,
+              lastUpdated: new Date().toISOString()
+            };
+          } else {
+            const newGuest = {
+              id: update.id,
+              familyId: update.data.familyId || `fam-${Date.now()}`,
+              firstName: update.data.firstName || 'Guest',
+              lastName: update.data.lastName || '',
+              email: update.data.email,
+              rsvpStatus: update.data.rsvpStatus || 'Pending',
+              accommodation: update.data.accommodation,
+              roomDetail: update.data.roomDetail,
+              bookingMethod: update.data.bookingMethod,
+              mealChoice: update.data.mealChoice,
+              note: update.data.note,
+              lastUpdated: new Date().toISOString()
+            } as Guest;
+            newList.push(newGuest);
+          }
+        });
+        return newList;
       });
-      return newList;
-    });
+    }
   };
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
@@ -374,7 +397,7 @@ const App: React.FC = () => {
 
       <RSVPModal isOpen={isRsvpOpen} onClose={() => setIsRsvpOpen(false)} guestList={guestList} onSave={handleRsvpSave} />
       <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} events={WEDDING_SCHEDULE} />
-      {isAdminOpen && <AdminDashboard guests={guestList} onClose={() => setIsAdminOpen(false)} />}
+      {isAdminOpen && <AdminDashboard onClose={() => setIsAdminOpen(false)} />}
     </div>
   );
 };

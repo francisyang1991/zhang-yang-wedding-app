@@ -1,28 +1,45 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Guest, RsvpStatus } from '../types';
 import PhotoUpload from './PhotoUpload';
-import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings } from 'lucide-react';
+import { guestService } from '../services/guestService';
+import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2 } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface AdminDashboardProps {
-  guests: Guest[];
   onClose: () => void;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'settings'>('guests');
+  const [guests, setGuests] = useState<Guest[]>([]);
+  const [isLoadingGuests, setIsLoadingGuests] = useState(false);
 
   // Authentication
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (password === 'maui2026') {
       setIsAuthenticated(true);
+      // Load guests after authentication
+      await loadGuests();
     } else {
       alert('Incorrect password');
+    }
+  };
+
+  const loadGuests = async () => {
+    setIsLoadingGuests(true);
+    try {
+      const guestData = await guestService.getAllGuests();
+      setGuests(guestData);
+    } catch (error) {
+      console.error('Error loading guests:', error);
+      alert('Error loading guest data. Please try again.');
+    } finally {
+      setIsLoadingGuests(false);
     }
   };
 
@@ -92,12 +109,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
                 <h1 className="font-serif text-2xl text-gray-900">Admin Dashboard</h1>
                 <p className="text-xs text-gray-500">Manage wedding guests, photos, and settings</p>
              </div>
-             <button
-                onClick={onClose}
-                className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
-             >
-                <X className="w-4 h-4" /> Close
-             </button>
+             <div className="flex items-center gap-2">
+                {isAuthenticated && (
+                   <button
+                      onClick={loadGuests}
+                      disabled={isLoadingGuests}
+                      className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-3 py-2 rounded-lg text-sm font-bold flex items-center gap-2 disabled:opacity-50"
+                   >
+                      {isLoadingGuests ? (
+                         <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                         <Users className="w-4 h-4" />
+                      )}
+                      Refresh
+                   </button>
+                )}
+                <button
+                   onClick={onClose}
+                   className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+                >
+                   <X className="w-4 h-4" /> Close
+                </button>
+             </div>
           </div>
 
           {/* Tab Navigation */}
@@ -141,6 +174,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
        <div className="max-w-7xl mx-auto p-6">
           {activeTab === 'guests' && (
              <div className="space-y-8">
+                {isLoadingGuests && (
+                   <div className="flex items-center justify-center py-12">
+                      <div className="text-center">
+                         <Loader2 className="w-8 h-8 animate-spin text-wedding-gold mx-auto mb-4" />
+                         <p className="text-gray-600">Loading guest data...</p>
+                      </div>
+                   </div>
+                )}
+
+                {!isLoadingGuests && (
                 {/* KPI Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
@@ -299,6 +342,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
                 </table>
              </div>
           </div>
+                )}
              </div>
           )}
 
