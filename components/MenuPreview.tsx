@@ -67,13 +67,6 @@ const MenuPreview = () => {
                 <p className="font-bold text-sm text-gray-800">Foie Gras Torchon</p>
                 <p className="text-xs text-gray-500">Brioche, Red Onion Jam, Black Salt</p>
              </div>
-             <div className="flex items-center gap-2">
-                <div>
-                   <p className="font-bold text-sm text-gray-800">Hamakua Mushroom Duxelle</p>
-                   <p className="text-xs text-gray-500">Garlic Bread, Truffle</p>
-                </div>
-                <span className="text-[9px] bg-green-50 text-green-700 border border-green-100 px-1.5 py-0.5 rounded uppercase font-bold">Vegan</span>
-             </div>
           </div>
         </div>
 
