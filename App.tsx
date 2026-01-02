@@ -257,7 +257,7 @@ const App: React.FC = () => {
         </div>
 
         {/* Couple Profile Photo */}
-        <div className="absolute left-4 md:left-8 lg:left-16 top-1/2 transform -translate-y-1/2 z-5 hidden sm:block">
+        <div className="absolute left-4 md:left-8 lg:left-16 top-1/2 transform -translate-y-1/2 z-10 hidden sm:block">
           <div className="relative">
             <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl backdrop-blur-sm bg-white/10">
               <img
@@ -284,7 +284,7 @@ const App: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative z-10 text-white max-w-4xl mx-auto animate-fade-in md:ml-16 lg:ml-24">
+        <div className="relative z-20 text-white max-w-4xl mx-auto animate-fade-in md:ml-16 lg:ml-24">
            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-6 text-wedding-sand drop-shadow-md">Please join us for</p>
            <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl mb-8 leading-none drop-shadow-xl">Xiaodong <span className="text-wedding-gold">&</span> Yuwen</h1>
            <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-10 text-sm md:text-lg font-light tracking-wide bg-black/20 backdrop-blur-md p-4 rounded-full inline-flex border border-white/20">
