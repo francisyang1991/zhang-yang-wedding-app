@@ -176,6 +176,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setFamilyMembers([...familyMembers, newGuest]);
     setMealMap(prev => ({ ...prev, [tempId]: 'Wagyu & Lobster' }));
     setDietaryMap(prev => ({ ...prev, [tempId]: '' }));
+    setEmailMap(prev => ({ ...prev, [tempId]: '' })); // Initialize email map for plus-one guests
   };
 
   const handleRemoveGuest = (id: string) => {
