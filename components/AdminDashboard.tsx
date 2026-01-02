@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Guest, RsvpStatus } from '../types';
 import PhotoUpload from './PhotoUpload';
 import { guestService } from '../services/guestService';
+import { supabase } from '../services/supabaseClient';
 import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2 } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
@@ -17,6 +18,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'settings'>('guests');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isLoadingGuests, setIsLoadingGuests] = useState(false);
+  const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
+  const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
 
   // Authentication
   const handleLogin = async (e: React.FormEvent) => {
@@ -42,6 +45,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       setIsLoadingGuests(false);
     }
   };
+
+  // Set up real-time subscription for guest changes
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const subscription = supabase
+      .channel('guests_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'guests'
+      }, (payload) => {
+        console.log('Real-time guest update:', payload);
+        setLastUpdateTime(new Date());
+        // Reload guests when any change occurs
+        loadGuests();
+      })
+      .subscribe((status) => {
+        setIsRealtimeConnected(status === 'SUBSCRIBED');
+      });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -106,8 +134,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
        <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 shadow-sm">
           <div className="flex justify-between items-center mb-4">
              <div>
-                <h1 className="font-serif text-2xl text-gray-900">Admin Dashboard</h1>
-                <p className="text-xs text-gray-500">Manage wedding guests, photos, and settings</p>
+                <h1 className="font-serif text-2xl text-gray-900 flex items-center gap-2">
+                   Admin Dashboard
+                   {isRealtimeConnected && (
+                      <div className="flex items-center gap-1 text-xs text-green-600">
+                         <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                         Live
+                      </div>
+                   )}
+                </h1>
+                <p className="text-xs text-gray-500">
+                   Manage wedding guests, photos, and settings
+                   {lastUpdateTime && (
+                      <span className="ml-2 text-green-600">
+                         • Last updated: {lastUpdateTime.toLocaleTimeString()}
+                      </span>
+                   )}
+                </p>
              </div>
              <div className="flex items-center gap-2">
                 {isAuthenticated && (

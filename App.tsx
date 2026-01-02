@@ -14,6 +14,7 @@ import ScheduleModal from './components/ScheduleModal';
 import { Accommodation, Guest } from './types';
 import { photoService } from './services/photoService';
 import { guestService } from './services/guestService';
+import { supabase } from './services/supabaseClient';
 import { Calendar, MapPin, Heart, Gift, Check, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
 
 const HERO_IMAGES = [
@@ -71,6 +72,29 @@ const App: React.FC = () => {
     };
 
     loadGuests();
+
+    // Set up real-time subscription for guest changes
+    const subscription = supabase
+      .channel('app_guests_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'guests'
+      }, async (payload) => {
+        console.log('Real-time guest update in App:', payload);
+        try {
+          // Reload guests when any change occurs
+          const updatedGuests = await guestService.getAllGuests();
+          setGuestList(updatedGuests);
+        } catch (error) {
+          console.error('Error reloading guests:', error);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   // Hero Slideshow Effect
