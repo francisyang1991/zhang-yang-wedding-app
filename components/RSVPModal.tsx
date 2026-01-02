@@ -79,7 +79,12 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
             const initialDietary: Record<string, string> = {};
             
             uniqueFamily.forEach(m => {
-                initialMeals[m.id] = m.mealChoice || 'Wagyu & Lobster';
+                // Validate meal choice - ensure it matches available options
+                const validMealChoices = ['Wagyu & Lobster', 'Kids Meal'];
+                const mealChoice = m.mealChoice && validMealChoices.includes(m.mealChoice)
+                    ? m.mealChoice
+                    : 'Wagyu & Lobster'; // Default to main course if invalid
+                initialMeals[m.id] = mealChoice;
                 initialDietary[m.id] = m.note || ''; // Assuming 'note' stored dietary info previously
             });
             setMealMap(initialMeals);
@@ -179,6 +184,12 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
              roomDetailString = rsvpStayChoice; // Fallback for others
         }
 
+        // Ensure meal choice is valid before saving
+        const validMealChoices = ['Wagyu & Lobster', 'Kids Meal'];
+        const mealChoice = validMealChoices.includes(mealMap[member.id])
+            ? mealMap[member.id]
+            : 'Wagyu & Lobster'; // Default fallback
+
         return {
             id: member.id,
             data: {
@@ -187,7 +198,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                 email: member.email,
                 familyId: member.familyId,
                 rsvpStatus: 'Attending' as RsvpStatus, // Implicitly attending
-                mealChoice: mealMap[member.id],
+                mealChoice: mealChoice,
                 note: dietaryMap[member.id], // Saving dietary restrictions in note field
                 accommodation: rsvpStayChoice as any,
                 roomDetail: roomDetailString,
