@@ -20,6 +20,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [isLoadingGuests, setIsLoadingGuests] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
+  const [updateNotification, setUpdateNotification] = useState<string | null>(null);
 
   // Authentication
   const handleLogin = async (e: React.FormEvent) => {
@@ -59,6 +60,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       }, (payload) => {
         console.log('Real-time guest update:', payload);
         setLastUpdateTime(new Date());
+
+        // Show notification based on event type
+        if (payload.eventType === 'INSERT') {
+          setUpdateNotification('New RSVP received! 🎉');
+        } else if (payload.eventType === 'UPDATE') {
+          setUpdateNotification('RSVP updated');
+        }
+
+        // Auto-hide notification after 3 seconds
+        setTimeout(() => setUpdateNotification(null), 3000);
+
         // Reload guests when any change occurs
         loadGuests();
       })
@@ -215,6 +227,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
        </div>
 
        <div className="max-w-7xl mx-auto p-6">
+          {/* Update Notification */}
+          {updateNotification && (
+             <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-sm text-blue-800 flex items-center gap-2">
+                   <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+                   {updateNotification}
+                </p>
+             </div>
+          )}
+
           {activeTab === 'guests' && (
              <div className="space-y-8">
                 {isLoadingGuests && (

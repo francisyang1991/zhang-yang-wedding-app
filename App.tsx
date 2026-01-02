@@ -36,6 +36,7 @@ const App: React.FC = () => {
   // Persistence Layer: Load from Supabase
   const [guestList, setGuestList] = useState<Guest[]>([]);
   const [isLoadingGuests, setIsLoadingGuests] = useState(true);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRsvpOpen, setIsRsvpOpen] = useState<boolean>(false);
@@ -130,8 +131,26 @@ const App: React.FC = () => {
       // Update local state by reloading from Supabase
       const updatedGuests = await guestService.getAllGuests();
       setGuestList(updatedGuests);
+
+      // Show success notification
+      setNotification({
+        message: 'RSVP saved successfully! 🎉',
+        type: 'success'
+      });
+
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+
     } catch (error) {
       console.error('Error saving RSVP:', error);
+      setNotification({
+        message: 'Failed to save RSVP. Please try again.',
+        type: 'error'
+      });
+
+      // Auto-hide error after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+
       // Fallback: Update local state optimistically
       setGuestList(prev => {
         const newList = [...prev];
@@ -205,6 +224,19 @@ const App: React.FC = () => {
           </div>
         </div>
       </nav>
+
+      {/* Notification */}
+      {notification && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
+          <div className={`px-6 py-3 rounded-lg shadow-lg text-white font-medium ${
+            notification.type === 'success'
+              ? 'bg-green-500'
+              : 'bg-red-500'
+          }`}>
+            {notification.message}
+          </div>
+        </div>
+      )}
 
       <header id="welcome" className="relative h-[70vh] min-h-[500px] flex items-center justify-center text-center px-4 overflow-hidden">
         {/* Background Slideshow */}
