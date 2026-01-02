@@ -59,7 +59,7 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 - [x] Create profile photo component with circular crop
 - [x] Position overlay on hero slideshow
 - [x] Add hover effects and animations
-- [ ] Implement admin photo upload functionality
+- [x] Implement admin photo upload functionality
 
 #### **1.3 Basic Photo Upload**
 - [ ] Create basic photo upload functionality
