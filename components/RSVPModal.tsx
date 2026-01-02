@@ -236,11 +236,8 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
         updates[0].data.note = `${updates[0].data.note ? updates[0].data.note + ' | ' : ''}General: ${rsvpNote}`;
       }
 
-      // Save to Supabase using batch update
-      await guestService.batchUpdateGuests(updates);
-
-      // Notify parent component for additional handling (notifications, state updates)
-      // Await to ensure all async operations complete before proceeding
+      // Notify parent component to handle all persistence and state updates
+      // Parent will save to Supabase, update local state, and show notifications
       await onSave(updates);
 
       setStep(3);

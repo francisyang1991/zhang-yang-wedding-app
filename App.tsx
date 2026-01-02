@@ -52,6 +52,7 @@ const App: React.FC = () => {
   
   // Hero Slideshow State
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [couplePhotoError, setCouplePhotoError] = useState(false);
   const [couplePhotoUrl, setCouplePhotoUrl] = useState<string>(DEFAULT_COUPLE_PHOTO);
 
   const onsite = accommodations.filter(a => a.category === 'Onsite');
@@ -231,24 +232,22 @@ const App: React.FC = () => {
         <div className="absolute left-4 md:left-8 lg:left-16 top-1/2 transform -translate-y-1/2 z-10 hidden sm:block">
           <div className="relative">
             <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl backdrop-blur-sm bg-white/10">
-              <img
-                src={couplePhotoUrl}
-                alt="Xiaodong & Yuwen"
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  // Fallback to initials if image fails to load
-                  const target = e.target as HTMLImageElement;
-                  target.style.display = 'none';
-                  const parent = target.parentElement;
-                  if (parent) {
-                    parent.innerHTML = `
-                      <div class="w-full h-full bg-wedding-gold flex items-center justify-center text-white font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
-                        X&Y
-                      </div>
-                    `;
-                  }
-                }}
-              />
+              {couplePhotoError ? (
+                // Fallback: Show initials if image fails to load
+                <div className="w-full h-full bg-wedding-gold flex items-center justify-center text-white font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+                  X&Y
+                </div>
+              ) : (
+                <img
+                  src={couplePhotoUrl}
+                  alt="Xiaodong & Yuwen"
+                  className="w-full h-full object-cover"
+                  onError={() => {
+                    // Set error state to show fallback instead of manipulating DOM
+                    setCouplePhotoError(true);
+                  }}
+                />
+              )}
             </div>
             {/* Decorative ring */}
             <div className="absolute -inset-2 border-2 border-wedding-gold/30 rounded-full animate-pulse"></div>
