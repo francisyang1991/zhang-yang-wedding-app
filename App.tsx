@@ -12,6 +12,7 @@ import AdminDashboard from './components/AdminDashboard';
 import MenuPreview from './components/MenuPreview';
 import ScheduleModal from './components/ScheduleModal';
 import { Accommodation, Guest } from './types';
+import { photoService } from './services/photoService';
 import { Calendar, MapPin, Heart, Gift, Check, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
 
 const HERO_IMAGES = [
@@ -21,8 +22,8 @@ const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=2000&auto=format&fit=crop"  // Wedding Vibe
 ];
 
-// Couple profile photo - will be replaced with uploaded photo later
-const COUPLE_PROFILE_PHOTO = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=400&auto=format&fit=crop&crop=face";
+// Default fallback photo URL
+const DEFAULT_COUPLE_PHOTO = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=400&auto=format&fit=crop&crop=face";
 
 const App: React.FC = () => {
   const [accommodations, setAccommodations] = useState<Accommodation[]>([
@@ -50,6 +51,7 @@ const App: React.FC = () => {
   
   // Hero Slideshow State
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [couplePhotoUrl, setCouplePhotoUrl] = useState<string>(DEFAULT_COUPLE_PHOTO);
 
   const onsite = accommodations.filter(a => a.category === 'Onsite');
   const budget = accommodations.filter(a => a.category === 'Budget');
@@ -65,6 +67,23 @@ const App: React.FC = () => {
       setCurrentHeroIndex((prev) => (prev + 1) % HERO_IMAGES.length);
     }, 5000);
     return () => clearInterval(timer);
+  }, []);
+
+  // Fetch couple photo from database
+  useEffect(() => {
+    const fetchCouplePhoto = async () => {
+      try {
+        const featuredPhoto = await photoService.getFeaturedPhoto('couple');
+        if (featuredPhoto) {
+          setCouplePhotoUrl(featuredPhoto.url);
+        }
+      } catch (error) {
+        console.error('Error fetching couple photo:', error);
+        // Keep the placeholder image if fetch fails
+      }
+    };
+
+    fetchCouplePhoto();
   }, []);
 
   const handleRsvpSave = (updates: { id: string; data: Partial<Guest> }[]) => {
@@ -163,7 +182,7 @@ const App: React.FC = () => {
           <div className="relative">
             <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl backdrop-blur-sm bg-white/10">
               <img
-                src={COUPLE_PROFILE_PHOTO}
+                src={couplePhotoUrl}
                 alt="Xiaodong & Yuwen"
                 className="w-full h-full object-cover"
                 onError={(e) => {
