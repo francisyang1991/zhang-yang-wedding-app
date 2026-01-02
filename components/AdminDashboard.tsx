@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Guest, RsvpStatus } from '../types';
 import PhotoUpload from './PhotoUpload';
 import RSVPTrends from './RSVPTrends';
@@ -36,7 +36,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     }
   };
 
-  const loadGuests = async () => {
+  const loadGuests = useCallback(async () => {
     setIsLoadingGuests(true);
     try {
       const guestData = await guestService.getAllGuests();
@@ -47,7 +47,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     } finally {
       setIsLoadingGuests(false);
     }
-  };
+  }, []);
 
   // Set up real-time subscription for guest changes
   useEffect(() => {
@@ -83,7 +83,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [isAuthenticated]);
+  }, [isAuthenticated, loadGuests]);
 
   if (!isAuthenticated) {
     return (
