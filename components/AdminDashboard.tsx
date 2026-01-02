@@ -1,7 +1,8 @@
 
 import React, { useState } from 'react';
 import { Guest, RsvpStatus } from '../types';
-import { PieChart, Users, Building, AlertCircle, Search, X } from 'lucide-react';
+import PhotoUpload from './PhotoUpload';
+import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface AdminDashboardProps {
@@ -13,6 +14,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'settings'>('guests');
 
   // Authentication
   const handleLogin = (e: React.FormEvent) => {
@@ -84,23 +86,63 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
   return (
     <div className="fixed inset-0 z-[100] bg-gray-50 overflow-auto">
        {/* Header */}
-       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center shadow-sm">
-          <div>
-             <h1 className="font-serif text-2xl text-gray-900">Guest Management</h1>
-             <p className="text-xs text-gray-500">Overview of RSVPs and Room Block Usage</p>
+       <div className="bg-white border-b border-gray-200 sticky top-0 z-10 px-6 py-4 shadow-sm">
+          <div className="flex justify-between items-center mb-4">
+             <div>
+                <h1 className="font-serif text-2xl text-gray-900">Admin Dashboard</h1>
+                <p className="text-xs text-gray-500">Manage wedding guests, photos, and settings</p>
+             </div>
+             <button
+                onClick={onClose}
+                className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
+             >
+                <X className="w-4 h-4" /> Close
+             </button>
           </div>
-          <button 
-             onClick={onClose}
-             className="bg-gray-100 hover:bg-gray-200 text-gray-600 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2"
-          >
-             <X className="w-4 h-4" /> Close
-          </button>
+
+          {/* Tab Navigation */}
+          <div className="flex space-x-1">
+             <button
+                onClick={() => setActiveTab('guests')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                   activeTab === 'guests'
+                      ? 'bg-wedding-gold text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+             >
+                <Users className="w-4 h-4" />
+                Guests ({guests.length})
+             </button>
+             <button
+                onClick={() => setActiveTab('photos')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                   activeTab === 'photos'
+                      ? 'bg-wedding-gold text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+             >
+                <Image className="w-4 h-4" />
+                Photos
+             </button>
+             <button
+                onClick={() => setActiveTab('settings')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                   activeTab === 'settings'
+                      ? 'bg-wedding-gold text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+             >
+                <Settings className="w-4 h-4" />
+                Settings
+             </button>
+          </div>
        </div>
 
-       <div className="max-w-7xl mx-auto p-6 space-y-8">
-          
-          {/* KPI Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+       <div className="max-w-7xl mx-auto p-6">
+          {activeTab === 'guests' && (
+             <div className="space-y-8">
+                {/* KPI Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
              <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
                 <div>
                    <p className="text-xs font-bold text-gray-400 uppercase">Total Invitees</p>
@@ -257,7 +299,102 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ guests, onClose }) => {
                 </table>
              </div>
           </div>
+             </div>
+          )}
 
+          {activeTab === 'photos' && (
+             <div className="space-y-8">
+                {/* Photo Management */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                   <div className="mb-6">
+                      <h2 className="font-serif text-xl text-gray-900 mb-2">Photo Management</h2>
+                      <p className="text-sm text-gray-600">Upload and manage photos for your wedding website</p>
+                   </div>
+
+                   {/* Couple Photos Section */}
+                   <div className="mb-8">
+                      <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                         <Image className="w-4 h-4" />
+                         Couple Profile Photos
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                         Upload photos of you and your partner. Mark one as "featured" to display in the hero section.
+                      </p>
+                      <PhotoUpload
+                         category="couple"
+                         maxFiles={5}
+                         onPhotoUploaded={(photo) => {
+                            console.log('Photo uploaded:', photo);
+                            // Could add toast notification here
+                         }}
+                         onPhotoDeleted={(photoId) => {
+                            console.log('Photo deleted:', photoId);
+                            // Could refresh couple photo in main app here
+                         }}
+                      />
+                   </div>
+
+                   {/* Hero Photos Section */}
+                   <div className="mb-8">
+                      <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                         <Image className="w-4 h-4" />
+                         Hero Background Photos
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                         Upload high-quality photos for the hero section slideshow background.
+                      </p>
+                      <PhotoUpload
+                         category="hero"
+                         maxFiles={10}
+                         onPhotoUploaded={(photo) => {
+                            console.log('Hero photo uploaded:', photo);
+                         }}
+                         onPhotoDeleted={(photoId) => {
+                            console.log('Hero photo deleted:', photoId);
+                         }}
+                      />
+                   </div>
+
+                   {/* Story Photos Section */}
+                   <div>
+                      <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
+                         <Image className="w-4 h-4" />
+                         Our Story Photos
+                      </h3>
+                      <p className="text-sm text-gray-600 mb-4">
+                         Photos for your love story timeline and gallery.
+                      </p>
+                      <PhotoUpload
+                         category="story"
+                         maxFiles={20}
+                         onPhotoUploaded={(photo) => {
+                            console.log('Story photo uploaded:', photo);
+                         }}
+                         onPhotoDeleted={(photoId) => {
+                            console.log('Story photo deleted:', photoId);
+                         }}
+                      />
+                   </div>
+                </div>
+             </div>
+          )}
+
+          {activeTab === 'settings' && (
+             <div className="space-y-8">
+                {/* Settings */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                   <h2 className="font-serif text-xl text-gray-900 mb-6">Settings</h2>
+                   <div className="space-y-6">
+                      <div>
+                         <h3 className="font-bold text-gray-700 mb-2">Coming Soon</h3>
+                         <p className="text-sm text-gray-600">
+                            Settings panel for wedding details, admin passwords, and app configuration will be available here.
+                         </p>
+                      </div>
+                   </div>
+                </div>
+             </div>
+          )}
        </div>
     </div>
   );
