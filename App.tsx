@@ -123,10 +123,10 @@ const App: React.FC = () => {
              <div className="hidden md:flex space-x-6 lg:space-x-8 text-xs font-bold text-gray-500 uppercase tracking-widest">
                 <a href="#welcome" onClick={(e) => scrollToSection(e, 'welcome')} className="hover:text-wedding-gold transition-colors cursor-pointer">Home</a>
                 <button onClick={() => setIsScheduleOpen(true)} className="hover:text-wedding-gold transition-colors cursor-pointer uppercase">Schedule</button>
+                <a href="#story" onClick={(e) => scrollToSection(e, 'story')} className="hover:text-wedding-gold transition-colors cursor-pointer">Story</a>
                 <a href="#accommodations" onClick={(e) => scrollToSection(e, 'accommodations')} className="hover:text-wedding-gold transition-colors cursor-pointer">Stay</a>
                 <a href="#menu" onClick={(e) => scrollToSection(e, 'menu')} className="hover:text-wedding-gold transition-colors cursor-pointer">Menu</a>
                 <a href="#travel" onClick={(e) => scrollToSection(e, 'travel')} className="hover:text-wedding-gold transition-colors cursor-pointer">Travel</a>
-                <a href="#story" onClick={(e) => scrollToSection(e, 'story')} className="hover:text-wedding-gold transition-colors cursor-pointer">Story</a>
              </div>
              <button 
                onClick={() => setIsRsvpOpen(true)}
@@ -171,6 +171,28 @@ const App: React.FC = () => {
            </div>
         </div>
       </header>
+
+      {/* OUR STORY */}
+      <section id="story" className="py-20 bg-gray-50 scroll-mt-24 border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-6 text-center">
+            {isStoryOpen ? (
+               <div className="animate-fade-in">
+                  <OurStory />
+                  <button onClick={() => setIsStoryOpen(false)} className="mt-12 text-gray-400 hover:text-wedding-gold text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors">
+                     <ChevronUp className="w-4 h-4" /> Fold Story
+                  </button>
+               </div>
+            ) : (
+               <div className="py-10">
+                  <Heart className="w-6 h-6 text-wedding-gold mx-auto mb-6" />
+                  <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-6">Our Journey</h2>
+                  <button onClick={() => setIsStoryOpen(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
+                     Read Our Story <ChevronDown className="w-4 h-4" />
+                  </button>
+               </div>
+            )}
+        </div>
+      </section>
 
       {/* STAY (Accommodations) */}
       <section id="accommodations" className="py-20 bg-gray-50 scroll-mt-24">
@@ -264,25 +286,6 @@ const App: React.FC = () => {
         </div>
       </section>
 
-      <section id="story" className="py-20 bg-gray-50 scroll-mt-24 border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-6 text-center">
-            {isStoryOpen ? (
-               <div className="animate-fade-in">
-                  <OurStory />
-                  <button onClick={() => setIsStoryOpen(false)} className="mt-12 text-gray-400 hover:text-wedding-gold text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors">
-                     <ChevronUp className="w-4 h-4" /> Fold Story
-                  </button>
-               </div>
-            ) : (
-               <div className="py-10">
-                  <h2 className="font-serif text-3xl text-wedding-text mb-4">Our Journey</h2>
-                  <button onClick={() => setIsStoryOpen(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
-                     Read Our Story <ChevronDown className="w-4 h-4" />
-                  </button>
-               </div>
-            )}
-        </div>
-      </section>
 
       <section id="share-board" className="py-20 bg-white scroll-mt-24 border-t border-gray-100">
         <div className="max-w-4xl mx-auto px-4">
