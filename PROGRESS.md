@@ -12,10 +12,10 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 
 ### **Overall Completion**
 - **Total Tasks**: 25
-- **Completed**: 5
+- **Completed**: 6
 - **In Progress**: 1
-- **Pending**: 19
-- **Overall Progress**: 24%
+- **Pending**: 18
+- **Overall Progress**: 28%
 
 ### **Phase Progress**
 - **Phase 1 (Foundation)**: 0% (0/6 tasks)
@@ -69,10 +69,11 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 ### **Phase 2: Database & Storage (Week 3-4)**
 
 #### **2.1 Supabase Setup**
-- [ ] Initialize Supabase project
-- [ ] Set up database schema for guests, photos, story_content
-- [ ] Configure authentication for admin access
-- [ ] Implement Row Level Security (RLS) policies
+- [x] Initialize Supabase project
+- [x] Set up database schema for guests, photos, story_content
+- [x] Configure authentication for admin access
+- [x] Implement Row Level Security (RLS) policies
+- [ ] Run supabase-schema.sql in Supabase dashboard
 
 #### **2.2 Enhanced Guest Data Model**
 - [ ] Create comprehensive guest database tables
