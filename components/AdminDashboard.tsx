@@ -432,9 +432,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 </table>
              </div>
           </div>
+                  </>
                 )}
              </div>
-          </>
           )}
 
           {activeTab === 'photos' && (
@@ -560,7 +560,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                    </div>
                 </div>
              </div>
-          </>
           )}
        </div>
     </div>
