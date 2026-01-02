@@ -151,37 +151,8 @@ const App: React.FC = () => {
       // Auto-hide error after 5 seconds
       setTimeout(() => setNotification(null), 5000);
 
-      // Fallback: Update local state optimistically
-      setGuestList(prev => {
-        const newList = [...prev];
-        updates.forEach(update => {
-          const index = newList.findIndex(g => g.id === update.id);
-          if (index >= 0) {
-            newList[index] = {
-              ...newList[index],
-              ...update.data,
-              lastUpdated: new Date().toISOString()
-            };
-          } else {
-            const newGuest = {
-              id: update.id,
-              familyId: update.data.familyId || `fam-${Date.now()}`,
-              firstName: update.data.firstName || 'Guest',
-              lastName: update.data.lastName || '',
-              email: update.data.email,
-              rsvpStatus: update.data.rsvpStatus || 'Pending',
-              accommodation: update.data.accommodation,
-              roomDetail: update.data.roomDetail,
-              bookingMethod: update.data.bookingMethod,
-              mealChoice: update.data.mealChoice,
-              note: update.data.note,
-              lastUpdated: new Date().toISOString()
-            } as Guest;
-            newList.push(newGuest);
-          }
-        });
-        return newList;
-      });
+      // Note: Do NOT update local state on failure to prevent data inconsistency.
+      // Real-time subscriptions will keep the UI in sync with server state.
     }
   };
 
