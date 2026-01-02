@@ -170,5 +170,96 @@ export const guestService = {
     }
 
     return stats
+  },
+
+  // Get RSVP trends over time
+  async getRsvpTrends(days: number = 30) {
+    const startDate = new Date()
+    startDate.setDate(startDate.getDate() - days)
+
+    const { data, error } = await supabase
+      .from('guests')
+      .select('rsvp_status, updated_at')
+      .gte('updated_at', startDate.toISOString())
+      .order('updated_at', { ascending: true })
+
+    if (error) {
+      console.error('Error fetching RSVP trends:', error)
+      throw error
+    }
+
+    // Group by date and status
+    const trends: Record<string, { date: string; attending: number; declined: number; pending: number }> = {}
+
+    data.forEach(guest => {
+      const date = new Date(guest.updated_at).toISOString().split('T')[0] // YYYY-MM-DD format
+      if (!trends[date]) {
+        trends[date] = { date, attending: 0, declined: 0, pending: 0 }
+      }
+
+      if (guest.rsvp_status === 'Attending') trends[date].attending++
+      else if (guest.rsvp_status === 'Declined') trends[date].declined++
+      else if (guest.rsvp_status === 'Pending') trends[date].pending++
+    })
+
+    return Object.values(trends).sort((a, b) => a.date.localeCompare(b.date))
+  },
+
+  // Get accommodation preferences analytics
+  async getAccommodationAnalytics() {
+    const { data, error } = await supabase
+      .from('guests')
+      .select('accommodation, rsvp_status')
+      .eq('rsvp_status', 'Attending')
+
+    if (error) {
+      console.error('Error fetching accommodation analytics:', error)
+      throw error
+    }
+
+    const analytics = {
+      andaz: data.filter(g => g.accommodation === 'andaz').length,
+      ac_hotel: data.filter(g => g.accommodation === 'ac_hotel').length,
+      self: data.filter(g => g.accommodation === 'self').length,
+      unknown: data.filter(g => !g.accommodation).length,
+    }
+
+    return analytics
+  },
+
+  // Get response rate analytics
+  async getResponseRateAnalytics() {
+    const { data, error } = await supabase
+      .from('guests')
+      .select('rsvp_status, created_at, updated_at')
+
+    if (error) {
+      console.error('Error fetching response rate analytics:', error)
+      throw error
+    }
+
+    const totalInvitations = data.length
+    const responses = data.filter(g => g.rsvp_status !== 'Pending').length
+    const attending = data.filter(g => g.rsvp_status === 'Attending').length
+
+    // Calculate average response time
+    const responseTimes = data
+      .filter(g => g.rsvp_status !== 'Pending' && g.updated_at)
+      .map(g => new Date(g.updated_at).getTime() - new Date(g.created_at).getTime())
+      .filter(time => time > 0)
+
+    const avgResponseTime = responseTimes.length > 0
+      ? responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length
+      : 0
+
+    return {
+      totalInvitations,
+      responses,
+      attending,
+      responseRate: totalInvitations > 0 ? (responses / totalInvitations) * 100 : 0,
+      attendanceRate: totalInvitations > 0 ? (attending / totalInvitations) * 100 : 0,
+      avgResponseTimeMs: avgResponseTime,
+      avgResponseTimeDays: Math.round(avgResponseTime / (1000 * 60 * 60 * 24)),
+    }
   }
 }

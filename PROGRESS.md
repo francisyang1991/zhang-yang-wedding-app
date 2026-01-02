@@ -95,17 +95,23 @@ This document tracks the progress of wedding app enhancements. Use this to monit
 - [ ] Add bulk photo operations (delete, reorder, categorize)
 - [ ] Create photo optimization and storage management
 
-#### **3.2 Content Management Interface**
-- [ ] Add rich text editor for story content
-- [ ] Implement photo caption and metadata editing
-- [ ] Create photo tagging and organization system
-- [ ] Build content preview and publishing workflow
+#### **3.2 Enhanced Photo Management**
+- [ ] Support advanced photo operations in admin mode
+- [ ] Implement bulk photo upload and management
+- [ ] Add photo optimization and CDN integration
+- [ ] Create photo gallery management system
 
-#### **3.3 Advanced Analytics**
-- [ ] Implement comprehensive RSVP analytics
-- [ ] Add accommodation preference tracking
-- [ ] Create guest demographic insights dashboard
-- [ ] Build data export functionality
+#### **3.3 RSVP Trends & Analytics**
+- [ ] Implement RSVP trends over time
+- [ ] Add response rate analytics and insights
+- [ ] Create accommodation preference tracking
+- [ ] Build data visualization for RSVP patterns
+
+#### **3.4 Content Preview System**
+- [ ] Add rich text editor for story content
+- [ ] Implement draft/publish workflow
+- [ ] Create content preview functionality
+- [ ] Build version control for story content
 
 ### **Phase 4: Polish & Deployment (Week 7-8)**
 

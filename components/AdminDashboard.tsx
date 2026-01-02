@@ -2,9 +2,11 @@
 import React, { useState, useEffect } from 'react';
 import { Guest, RsvpStatus } from '../types';
 import PhotoUpload from './PhotoUpload';
+import RSVPTrends from './RSVPTrends';
+import StoryEditor from './StoryEditor';
 import { guestService } from '../services/guestService';
 import { supabase } from '../services/supabaseClient';
-import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2 } from 'lucide-react';
+import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2, TrendingUp, FileText } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface AdminDashboardProps {
@@ -15,7 +17,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'settings'>('guests');
+  const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'analytics' | 'content' | 'settings'>('guests');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isLoadingGuests, setIsLoadingGuests] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
@@ -211,6 +213,28 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
              >
                 <Image className="w-4 h-4" />
                 Photos
+             </button>
+             <button
+                onClick={() => setActiveTab('analytics')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                   activeTab === 'analytics'
+                      ? 'bg-wedding-gold text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+             >
+                <TrendingUp className="w-4 h-4" />
+                Analytics
+             </button>
+             <button
+                onClick={() => setActiveTab('content')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                   activeTab === 'content'
+                      ? 'bg-wedding-gold text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+             >
+                <FileText className="w-4 h-4" />
+                Content
              </button>
              <button
                 onClick={() => setActiveTab('settings')}
@@ -484,6 +508,37 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                          }}
                       />
                    </div>
+                </div>
+             </div>
+          )}
+
+          {activeTab === 'analytics' && (
+             <div className="space-y-8">
+                {/* RSVP Trends & Analytics */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                   <div className="mb-6">
+                      <h2 className="font-serif text-xl text-gray-900 mb-2">RSVP Trends & Analytics</h2>
+                      <p className="text-sm text-gray-600">Track response rates, accommodation preferences, and RSVP patterns over time</p>
+                   </div>
+                   <RSVPTrends />
+                </div>
+             </div>
+          )}
+
+          {activeTab === 'content' && (
+             <div className="space-y-8">
+                {/* Story Content Management */}
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                   <div className="mb-6">
+                      <h2 className="font-serif text-xl text-gray-900 mb-2">Content Management</h2>
+                      <p className="text-sm text-gray-600">Create and manage your wedding story content with draft/publish workflow</p>
+                   </div>
+                   <StoryEditor
+                      onContentChange={() => {
+                         console.log('Story content updated');
+                         // Could trigger a refresh of published content elsewhere
+                      }}
+                   />
                 </div>
              </div>
           )}
