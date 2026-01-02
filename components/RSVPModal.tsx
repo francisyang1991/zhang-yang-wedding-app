@@ -326,7 +326,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                                 className="w-full text-sm border-gray-200 bg-gray-50 rounded border p-2 focus:outline-none"
                                             >
                                                 <option value="Wagyu & Lobster">Wagyu & Spiny Lobster</option>
-                                                <option value="Kids Meal">Kids Meal</option>
+                                                <option value="Kids Meal">Special Dietary (Fill in below)</option>
                                             </select>
                                             <div className="relative">
                                                 <AlertCircle className="absolute left-2.5 top-2.5 w-3 h-3 text-gray-400" />
