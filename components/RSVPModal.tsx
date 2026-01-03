@@ -145,7 +145,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
         lastName: newLastName,
         email: newEmail,
         rsvpStatus: 'Pending' as RsvpStatus,
-        familyId: `fam-${Date.now()}`
+        familyId: crypto.randomUUID()
       };
 
       const createdGuest = await guestService.createGuest(newGuestData);
@@ -168,7 +168,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     const tempId = `plusone-${Date.now()}`;
     const newGuest: Guest = {
         id: tempId,
-        familyId: familyMembers[0]?.familyId || `fam-${Date.now()}`,
+        familyId: familyMembers[0]?.familyId || crypto.randomUUID(),
         firstName: '',
         lastName: '',
         rsvpStatus: 'Pending'
