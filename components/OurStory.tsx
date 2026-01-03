@@ -17,10 +17,10 @@ const OurStory = () => {
          <span className="text-wedding-gold font-bold text-xs uppercase tracking-widest mb-4 block">The Journey</span>
          <h2 className="font-serif text-4xl text-wedding-text mb-6">How We Met</h2>
          <p className="text-gray-600 leading-relaxed mb-4 font-light">
-           It started with a shared love for spicy hotpot and bad reality TV. Six years, three cities, and two dogs later, we are finally making it official.
+           It began with a steaming pot of spicy hotpot at Chengdu Memory in Seattle. Six years, countless miles, two cats, and a life built through adventure later—we're making it official.
          </p>
          <p className="text-gray-600 leading-relaxed mb-6 font-light">
-           We chose Maui because it was the first place we traveled to together. The memory of watching the sunrise at Haleakalā is something we want to recreate with our favorite people in the world.
+           Maui was our first trip together, a place marked by sunsets we never forgot. Being here, surrounded by our most beloved friends, is what gives this moment its meaning.
          </p>
          <div className="flex items-center gap-4">
             <div className="text-center">
