@@ -2,14 +2,19 @@
 import React from 'react';
 
 const OurStory = () => {
+  // Calculate days from November 27, 2020
+  const startDate = new Date('2020-11-27');
+  const today = new Date();
+  const daysTogether = Math.floor((today.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+
   return (
     <div className="flex flex-col md:flex-row gap-12 items-center">
-      <div className="w-full md:w-1/2 relative">
+      <div className="w-full md:w-[35%] relative">
          <div className="absolute top-4 -left-4 w-full h-full border-2 border-wedding-gold/30 rounded-xl z-0"></div>
          <img 
-           src="https://images.unsplash.com/photo-1522673607200-1645062cd958?q=80&w=1000" 
+           src="/images/couple-portrait.jpeg" 
            alt="Couple Portrait" 
-           className="w-full h-auto rounded-xl shadow-lg relative z-10 grayscale hover:grayscale-0 transition-all duration-700"
+           className="w-full h-auto rounded-xl shadow-lg relative z-10 transition-all duration-700"
          />
       </div>
       
@@ -22,15 +27,10 @@ const OurStory = () => {
          <p className="text-gray-600 leading-relaxed mb-6 font-light">
            Maui was our first trip together, a place marked by sunsets we never forgot. Being here, surrounded by our most beloved friends, is what gives this moment its meaning.
          </p>
-         <div className="flex items-center gap-4">
+         <div className="flex items-center justify-center gap-4">
             <div className="text-center">
-               <span className="block font-serif text-3xl text-wedding-gold">2,190</span>
+               <span className="block font-serif text-3xl text-wedding-gold">{daysTogether.toLocaleString()}</span>
                <span className="text-[10px] text-gray-400 uppercase tracking-wider">Days Together</span>
-            </div>
-            <div className="w-px h-10 bg-gray-200"></div>
-            <div className="text-center">
-               <span className="block font-serif text-3xl text-wedding-gold">3</span>
-               <span className="text-[10px] text-gray-400 uppercase tracking-wider">Cities Lived</span>
             </div>
          </div>
       </div>
