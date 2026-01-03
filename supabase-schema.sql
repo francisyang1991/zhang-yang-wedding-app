@@ -104,12 +104,12 @@ CREATE POLICY "Allow public read access to photos" ON photos
 CREATE POLICY "Allow authenticated users to manage photos" ON photos
   FOR ALL USING (auth.role() = 'authenticated');
 
--- Story Content: Allow anyone to read, authenticated users can modify
+-- Story Content: Allow public access (for wedding website admin)
 CREATE POLICY "Allow public read access to story content" ON story_content
   FOR SELECT USING (true);
 
-CREATE POLICY "Allow authenticated users to manage story content" ON story_content
-  FOR ALL USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow public management of story content" ON story_content
+  FOR ALL USING (true);
 
 -- Admin Settings: Only authenticated users can access
 CREATE POLICY "Allow authenticated users to manage admin settings" ON admin_settings
