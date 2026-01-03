@@ -91,11 +91,11 @@ ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read access to guests" ON guests
   FOR SELECT USING (true);
 
-CREATE POLICY "Allow authenticated users to insert guests" ON guests
-  FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+CREATE POLICY "Allow public insert of guests" ON guests
+  FOR INSERT WITH CHECK (true);
 
-CREATE POLICY "Allow authenticated users to update guests" ON guests
-  FOR UPDATE USING (auth.role() = 'authenticated');
+CREATE POLICY "Allow public update of guests" ON guests
+  FOR UPDATE USING (true);
 
 -- Photos: Allow anyone to read, authenticated users can modify
 CREATE POLICY "Allow public read access to photos" ON photos
