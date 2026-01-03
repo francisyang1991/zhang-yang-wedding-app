@@ -396,55 +396,59 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                     </select>
                                 </div>
                                 
-                                {rsvpStayChoice === 'andaz' && (
+                                {rsvpStayChoice && rsvpStayChoice !== 'andaz_villa' && (
                                     <div className="animate-fade-in space-y-4 bg-wedding-sand/50 p-4 rounded-lg border border-wedding-gold/20">
                                         
-                                        {/* Room Type Sub-Selection */}
-                                        <div>
-                                            <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Room View Preference</label>
-                                            <select 
-                                                required 
-                                                value={rsvpRoomView} 
-                                                onChange={(e) => setRsvpRoomView(e.target.value)} 
-                                                className="w-full bg-white border border-wedding-gold/30 rounded p-2 text-sm focus:outline-none"
-                                            >
-                                                <option value="">Select View...</option>
-                                                <option value="Standard Resort View">Standard Resort View</option>
-                                                <option value="Partial Ocean View">Partial Ocean View</option>
-                                                <option value="Full Ocean View">Full Ocean View</option>
-                                            </select>
-                                        </div>
+                                        {rsvpStayChoice === 'andaz' && (
+                                            <>
+                                                {/* Room Type Sub-Selection */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Room View Preference</label>
+                                                    <select 
+                                                        required 
+                                                        value={rsvpRoomView} 
+                                                        onChange={(e) => setRsvpRoomView(e.target.value)} 
+                                                        className="w-full bg-white border border-wedding-gold/30 rounded p-2 text-sm focus:outline-none"
+                                                    >
+                                                        <option value="">Select View...</option>
+                                                        <option value="Standard Resort View">Standard Resort View</option>
+                                                        <option value="Partial Ocean View">Partial Ocean View</option>
+                                                        <option value="Full Ocean View">Full Ocean View</option>
+                                                    </select>
+                                                </div>
 
-                                        {/* Bed Preference */}
-                                        <div>
-                                            <div className="flex items-center gap-2 text-xs font-bold text-wedding-gold uppercase mb-2">
-                                                <Bed className="w-4 h-4" /> Bed Preference
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input 
-                                                        type="radio" 
-                                                        name="bedPref" 
-                                                        value="1 King" 
-                                                        checked={rsvpBedPreference === '1 King'} 
-                                                        onChange={(e) => setRsvpBedPreference(e.target.value)}
-                                                        className="accent-wedding-gold"
-                                                    />
-                                                    <span className="text-sm text-gray-700">1 King Bed</span>
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input 
-                                                        type="radio" 
-                                                        name="bedPref" 
-                                                        value="2 Queen" 
-                                                        checked={rsvpBedPreference === '2 Queen'} 
-                                                        onChange={(e) => setRsvpBedPreference(e.target.value)}
-                                                        className="accent-wedding-gold"
-                                                    />
-                                                    <span className="text-sm text-gray-700">2 Queen Beds</span>
-                                                </label>
-                                            </div>
-                                        </div>
+                                                {/* Bed Preference */}
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-xs font-bold text-wedding-gold uppercase mb-2">
+                                                        <Bed className="w-4 h-4" /> Bed Preference
+                                                    </div>
+                                                    <div className="flex gap-4">
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="radio" 
+                                                                name="bedPref" 
+                                                                value="1 King" 
+                                                                checked={rsvpBedPreference === '1 King'} 
+                                                                onChange={(e) => setRsvpBedPreference(e.target.value)}
+                                                                className="accent-wedding-gold"
+                                                            />
+                                                            <span className="text-sm text-gray-700">1 King Bed</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="radio" 
+                                                                name="bedPref" 
+                                                                value="2 Queen" 
+                                                                checked={rsvpBedPreference === '2 Queen'} 
+                                                                onChange={(e) => setRsvpBedPreference(e.target.value)}
+                                                                className="accent-wedding-gold"
+                                                            />
+                                                            <span className="text-sm text-gray-700">2 Queen Beds</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
 
                                         {/* Booking Method / Duration */}
                                         <div>
