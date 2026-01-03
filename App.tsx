@@ -45,6 +45,7 @@ const App: React.FC = () => {
   
   // Section Folding States
   const [isStoryOpen, setIsStoryOpen] = useState<boolean>(false);
+  const [isScheduleExpanded, setIsScheduleExpanded] = useState<boolean>(false);
 
   // Pricing Mode State (Kept for cards, removed for chart)
   const [pricingMode, setPricingMode] = useState<'max' | 'comfort'>('max');
@@ -52,6 +53,7 @@ const App: React.FC = () => {
   
   // Hero Slideshow State
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [heroImages, setHeroImages] = useState<string[]>(HERO_IMAGES);
   const [couplePhotoError, setCouplePhotoError] = useState(false);
   const [couplePhotoUrl, setCouplePhotoUrl] = useState<string>(DEFAULT_COUPLE_PHOTO);
 
@@ -102,26 +104,33 @@ const App: React.FC = () => {
   // Hero Slideshow Effect
   useEffect(() => {
     const timer = setInterval(() => {
-      setCurrentHeroIndex((prev) => (prev + 1) % HERO_IMAGES.length);
+      setCurrentHeroIndex((prev) => (prev + 1) % heroImages.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [heroImages.length]);
 
-  // Fetch couple photo from database
+  // Fetch couple photo and hero images from database
   useEffect(() => {
-    const fetchCouplePhoto = async () => {
+    const fetchPhotos = async () => {
       try {
-        const featuredPhoto = await photoService.getFeaturedPhoto('couple');
+        const [featuredPhoto, heroPhotos] = await Promise.all([
+          photoService.getFeaturedPhoto('couple'),
+          photoService.getPhotosByCategory('hero')
+        ]);
+
         if (featuredPhoto) {
           setCouplePhotoUrl(featuredPhoto.url);
         }
+
+        if (heroPhotos && heroPhotos.length > 0) {
+          setHeroImages(heroPhotos.map(p => p.url));
+        }
       } catch (error) {
-        console.error('Error fetching couple photo:', error);
-        // Keep the placeholder image if fetch fails
+        console.error('Error fetching photos:', error);
       }
     };
 
-    fetchCouplePhoto();
+    fetchPhotos();
   }, []);
 
   const handleRsvpSave = async (updates: { id: string; data: Partial<Guest> }[]) => {
@@ -185,11 +194,11 @@ const App: React.FC = () => {
              </a>
              <div className="hidden md:flex space-x-6 lg:space-x-8 text-xs font-bold text-gray-500 uppercase tracking-widest">
                 <a href="#welcome" onClick={(e) => scrollToSection(e, 'welcome')} className="hover:text-wedding-gold transition-colors cursor-pointer">Home</a>
-                <button onClick={() => setIsScheduleOpen(true)} className="hover:text-wedding-gold transition-colors cursor-pointer uppercase">Schedule</button>
+                <a href="#schedule" onClick={(e) => scrollToSection(e, 'schedule')} className="hover:text-wedding-gold transition-colors cursor-pointer">Schedule</a>
+                <a href="#story" onClick={(e) => scrollToSection(e, 'story')} className="hover:text-wedding-gold transition-colors cursor-pointer">Story</a>
                 <a href="#accommodations" onClick={(e) => scrollToSection(e, 'accommodations')} className="hover:text-wedding-gold transition-colors cursor-pointer">Stay</a>
                 <a href="#menu" onClick={(e) => scrollToSection(e, 'menu')} className="hover:text-wedding-gold transition-colors cursor-pointer">Menu</a>
                 <a href="#travel" onClick={(e) => scrollToSection(e, 'travel')} className="hover:text-wedding-gold transition-colors cursor-pointer">Travel</a>
-                <a href="#story" onClick={(e) => scrollToSection(e, 'story')} className="hover:text-wedding-gold transition-colors cursor-pointer">Story</a>
              </div>
              <button 
                onClick={() => setIsRsvpOpen(true)}
@@ -213,53 +222,37 @@ const App: React.FC = () => {
         </div>
       )}
 
-      <header id="welcome" className="relative h-[70vh] min-h-[500px] flex items-center justify-center text-center px-4 overflow-hidden">
+      <header id="welcome" className="relative h-screen min-h-[600px] flex items-center justify-center text-center px-4 overflow-hidden">
         {/* Background Slideshow */}
         <div className="absolute inset-0 z-0 bg-gray-900">
-           {HERO_IMAGES.map((img, index) => (
+           {heroImages.map((img, index) => (
              <div 
                key={index}
                className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${index === currentHeroIndex ? 'opacity-100' : 'opacity-0'}`}
              >
+               {/* Blurred Background for Ambience */}
+               <img 
+                 src={img} 
+                 alt="" 
+                 className="absolute inset-0 w-full h-full object-cover blur-xl scale-110 opacity-60"
+               />
+               
+               {/* Main Image - Full View (Not Cut) */}
                <img 
                  src={img} 
                  alt={`Wedding Venue ${index + 1}`} 
-                 className="w-full h-full object-cover"
+                 className="relative w-full h-full object-contain z-10 drop-shadow-2xl"
                />
-               <div className="absolute inset-0 bg-black/40"></div>
+               
+               {/* Overlay */}
+               <div className="absolute inset-0 bg-black/30 z-20"></div>
              </div>
            ))}
         </div>
 
-        {/* Couple Profile Photo */}
-        <div className="absolute left-4 md:left-8 lg:left-16 top-1/2 transform -translate-y-1/2 z-10 hidden sm:block">
-          <div className="relative">
-            <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl backdrop-blur-sm bg-white/10">
-              {couplePhotoError ? (
-                // Fallback: Show initials if image fails to load
-                <div className="w-full h-full bg-wedding-gold flex items-center justify-center text-white font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
-                  X&Y
-                </div>
-              ) : (
-                <img
-                  src={couplePhotoUrl}
-                  alt="Xiaodong & Yuwen"
-                  className="w-full h-full object-cover"
-                  onError={() => {
-                    // Set error state to show fallback instead of manipulating DOM
-                    setCouplePhotoError(true);
-                  }}
-                />
-              )}
-            </div>
-            {/* Decorative ring */}
-            <div className="absolute -inset-2 border-2 border-wedding-gold/30 rounded-full animate-pulse"></div>
-          </div>
-        </div>
-
-        <div className="relative z-20 text-white max-w-4xl mx-auto animate-fade-in md:ml-16 lg:ml-24">
+        <div className="relative z-20 text-white max-w-7xl mx-auto animate-fade-in">
            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-6 text-wedding-sand drop-shadow-md">Please join us for</p>
-           <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl mb-8 leading-none drop-shadow-xl">Xiaodong <span className="text-wedding-gold">&</span> Yuwen</h1>
+           <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl mb-8 leading-none drop-shadow-xl whitespace-nowrap">Xiaodong <span className="text-wedding-gold">&</span> Yuwen</h1>
            <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-10 text-sm md:text-lg font-light tracking-wide bg-black/20 backdrop-blur-md p-4 rounded-full inline-flex border border-white/20">
               <div className="flex items-center gap-2">
                  <Calendar className="w-4 h-4 text-wedding-gold" />
@@ -274,6 +267,48 @@ const App: React.FC = () => {
         </div>
       </header>
 
+      <section id="story" className="py-20 bg-gray-50 scroll-mt-24 border-b border-gray-100">
+        <div className="max-w-6xl mx-auto px-6">
+            {isStoryOpen ? (
+               <div className="animate-fade-in">
+                  <OurStory />
+                  <button onClick={() => setIsStoryOpen(false)} className="mt-12 text-gray-400 hover:text-wedding-gold text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors">
+                     <ChevronUp className="w-4 h-4" /> Fold Story
+                  </button>
+               </div>
+            ) : (
+               <div className="py-10 text-center">
+                  <h2 className="font-script text-5xl md:text-6xl text-wedding-text mb-6">Our Journey</h2>
+                  <button onClick={() => setIsStoryOpen(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
+                     Read Our Story <ChevronDown className="w-4 h-4" />
+                  </button>
+               </div>
+            )}
+        </div>
+      </section>
+
+      {/* SCHEDULE */}
+      <section id="schedule" className="py-20 bg-white scroll-mt-24 border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-6">
+           {isScheduleExpanded ? (
+              <div className="animate-fade-in text-center">
+                 <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-12">Wedding Weekend</h2>
+                 <Timeline events={WEDDING_SCHEDULE} />
+                 <button onClick={() => setIsScheduleExpanded(false)} className="mt-12 text-gray-400 hover:text-wedding-gold text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors">
+                    <ChevronUp className="w-4 h-4" /> Fold Schedule
+                 </button>
+              </div>
+           ) : (
+              <div className="py-10 text-center">
+                 <h2 className="font-script text-5xl md:text-6xl text-wedding-text mb-6">Wedding Schedule</h2>
+                 <button onClick={() => setIsScheduleExpanded(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
+                    View Schedule <ChevronDown className="w-4 h-4" />
+                 </button>
+              </div>
+           )}
+        </div>
+      </section>
+
       {/* STAY (Accommodations) */}
       <section id="accommodations" className="py-20 bg-gray-50 scroll-mt-24">
         <div className="max-w-3xl mx-auto px-6 text-center mb-16">
@@ -282,6 +317,10 @@ const App: React.FC = () => {
            <p className="text-gray-600 leading-relaxed mb-8 font-light text-lg">
              We have secured a block of rooms at the stunning <strong>Andaz Maui</strong>. 
              Xiaodong & Yuwen are providing a special gift to our guests to help with travel costs.
+             <br />
+             <span className="text-sm font-bold text-wedding-gold mt-2 block">
+                Discounted rates are available for extended stays (3 days pre/post wedding).
+             </span>
            </p>
            <div className="bg-white border border-wedding-gold/20 rounded-xl p-6 mb-8 shadow-sm">
               <div className="flex flex-col items-center">
@@ -363,26 +402,6 @@ const App: React.FC = () => {
                <p className="text-gray-500 max-w-lg mx-auto">Essential information for your journey. <strong>Book your rental car early!</strong></p>
            </div>
            <TravelInfo />
-        </div>
-      </section>
-
-      <section id="story" className="py-20 bg-gray-50 scroll-mt-24 border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-6 text-center">
-            {isStoryOpen ? (
-               <div className="animate-fade-in">
-                  <OurStory />
-                  <button onClick={() => setIsStoryOpen(false)} className="mt-12 text-gray-400 hover:text-wedding-gold text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors">
-                     <ChevronUp className="w-4 h-4" /> Fold Story
-                  </button>
-               </div>
-            ) : (
-               <div className="py-10">
-                  <h2 className="font-serif text-3xl text-wedding-text mb-4">Our Journey</h2>
-                  <button onClick={() => setIsStoryOpen(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
-                     Read Our Story <ChevronDown className="w-4 h-4" />
-                  </button>
-               </div>
-            )}
         </div>
       </section>
 

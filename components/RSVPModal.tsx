@@ -11,6 +11,10 @@ interface RSVPModalProps {
   onSave: (updates: { id: string; data: Partial<Guest> }[]) => void;
 }
 
+interface ExtendedGuest extends Guest {
+    isPlusOne?: boolean;
+}
+
 const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSave }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Name Check, 2: Form, 3: Success
   const [mode, setMode] = useState<'search' | 'register'>('search'); 
@@ -21,7 +25,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
   const [newEmail, setNewEmail] = useState('');
 
   // Form State
-  const [familyMembers, setFamilyMembers] = useState<Guest[]>([]);
+  const [familyMembers, setFamilyMembers] = useState<ExtendedGuest[]>([]);
   const [mealMap, setMealMap] = useState<Record<string, string>>({});
   const [dietaryMap, setDietaryMap] = useState<Record<string, string>>({});
   const [phoneMap, setPhoneMap] = useState<Record<string, string>>({});
@@ -89,11 +93,32 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
         const initialPhones: Record<string, string> = {};
         const initialEmails: Record<string, string> = {};
 
+        const VALID_MEALS = ['Wagyu & Lobster', 'Special Dietary'];
+
         uniqueFamily.forEach(m => {
-          initialMeals[m.id] = m.mealChoice || 'Wagyu & Lobster';
+          let meal = m.mealChoice || 'Wagyu & Lobster';
+          if (!VALID_MEALS.includes(meal) && meal !== 'Kids Meal' && meal !== 'Mushroom Duxelle') {
+             // If unknown meal, default to Wagyu
+             meal = 'Wagyu & Lobster';
+          } 
+          // Map legacy options to new ones if needed, or just keep them as is if we want to preserve history.
+          // The requirement said "ensure invalid meal choices default to valid options".
+          if (meal === 'Kids Meal' || meal === 'Mushroom Duxelle') {
+             meal = 'Special Dietary';
+          }
+          
+          initialMeals[m.id] = meal;
           initialDietary[m.id] = m.note || ''; // Using note for dietary initially, will enhance later
           initialPhones[m.id] = ''; // Will be populated from database in future
           initialEmails[m.id] = m.email || '';
+          
+          // Check for existing Plus One data
+          if (m.plusOne && m.plusOneName) {
+            // Note: Currently we don't visualize existing Plus Ones as separate editable rows in this simplified logic,
+            // or we could split them here.
+            // For now, let's keep it simple: If they have a plus one, maybe we should indicate it?
+            // The user request is about ADDING a plus one not creating a new row.
+          }
         });
         setMealMap(initialMeals);
         setDietaryMap(initialDietary);
@@ -165,19 +190,27 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
   };
 
   const handleAddGuest = () => {
-    // Generate a temporary UUID for the new guest to ensure valid format for DB inserts
+    // Limit: Only 1 Plus One per group for now to simplify linkage
+    const existingPlusOne = familyMembers.find(m => m.isPlusOne);
+    if (existingPlusOne) {
+        alert("We can only accommodate one Plus One per group due to venue capacity. Please contact us if you have questions!");
+        return;
+    }
+
+    // Generate a temporary UUID for the new guest UI purposes
     const tempId = crypto.randomUUID();
-    const newGuest: Guest = {
+    const newGuest: ExtendedGuest = {
         id: tempId,
         familyId: familyMembers[0]?.familyId || crypto.randomUUID(),
         firstName: '',
         lastName: '',
-        rsvpStatus: 'Pending'
+        rsvpStatus: 'Pending',
+        isPlusOne: true // Mark as a Plus One to be merged
     };
     setFamilyMembers([...familyMembers, newGuest]);
     setMealMap(prev => ({ ...prev, [tempId]: 'Wagyu & Lobster' }));
     setDietaryMap(prev => ({ ...prev, [tempId]: '' }));
-    setEmailMap(prev => ({ ...prev, [tempId]: '' })); // Initialize email map for plus-one guests
+    setEmailMap(prev => ({ ...prev, [tempId]: '' })); 
   };
 
   const handleRemoveGuest = (id: string) => {
@@ -206,8 +239,12 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setErrorMessage('');
 
     try {
+      // Separate real guests from Plus Ones
+      const realGuests = familyMembers.filter(m => !m.isPlusOne);
+      const plusOnes = familyMembers.filter(m => m.isPlusOne);
+
       // Prepare updates for Supabase
-      const updates = familyMembers.map(member => {
+      const updates = realGuests.map(member => {
         let roomDetailString = '';
         if (rsvpStayChoice === 'andaz') {
           roomDetailString = [rsvpRoomView, rsvpBedPreference].filter(Boolean).join(' | ');
@@ -215,9 +252,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
           roomDetailString = rsvpStayChoice; // Fallback for others
         }
 
-        return {
-          id: member.id,
-          data: {
+        const data: Partial<Guest> = {
             firstName: member.firstName,
             lastName: member.lastName,
             email: emailMap[member.id] || member.email,
@@ -228,13 +263,32 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
             accommodation: rsvpStayChoice as any,
             roomDetail: roomDetailString,
             bookingMethod: rsvpBookingMethod,
-          }
+        };
+
+        // If there is a Plus One, attach it to the FIRST real guest (usually the inviter)
+        if (plusOnes.length > 0 && member.id === realGuests[0].id) {
+            const po = plusOnes[0];
+            data.plusOne = true;
+            data.plusOneName = `${po.firstName} ${po.lastName}`;
+            // Append Plus One meal/dietary to note since schema doesn't support separate columns
+            const poMeal = mealMap[po.id];
+            const poDiet = dietaryMap[po.id];
+            
+            const existingNote = data.note || '';
+            const poNote = `[+1 Meal: ${poMeal}]${poDiet ? ` [+1 Diet: ${poDiet}]` : ''}`;
+            data.note = existingNote ? `${existingNote} | ${poNote}` : poNote;
+        }
+
+        return {
+          id: member.id,
+          data: data
         };
       });
 
       // Append general note if provided
       if (updates.length > 0 && rsvpNote) {
-        updates[0].data.note = `${updates[0].data.note ? updates[0].data.note + ' | ' : ''}General: ${rsvpNote}`;
+        const currentNote = updates[0].data.note || '';
+        updates[0].data.note = currentNote ? `${currentNote} | General: ${rsvpNote}` : `General: ${rsvpNote}`;
       }
 
       // Notify parent component to handle all persistence and state updates
@@ -359,8 +413,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                                 className="w-full text-sm border-gray-200 bg-gray-50 rounded border p-2 focus:outline-none"
                                             >
                                                 <option value="Wagyu & Lobster">Wagyu & Spiny Lobster</option>
-                                                <option value="Mushroom Duxelle">Hamakua Mushroom (Vegan)</option>
-                                                <option value="Kids Meal">Kids Meal</option>
+                                                <option value="Special Dietary">Special Dietary (Fill in below)</option>
                                             </select>
                                             <div className="relative">
                                                 <AlertCircle className="absolute left-2.5 top-2.5 w-3 h-3 text-gray-400" />
