@@ -432,62 +432,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                           </table>
                         </div>
                       </div>
-                      {/* Charts Row */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-80">
-                          <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                            <PieChart className="w-4 h-4" /> RSVP Status
-                          </h3>
-                          <ResponsiveContainer width="100%" height="100%">
-                            <RePieChart>
-                              <Pie
-                                data={rsvpData}
-                                cx="50%"
-                                cy="50%"
-                                innerRadius={60}
-                                outerRadius={80}
-                                paddingAngle={5}
-                                dataKey="value"
-                              >
-                                {rsvpData.map((entry, index) => (
-                                  <Cell key={`cell-${index}`} fill={entry.color} />
-                                ))}
-                              </Pie>
-                              <ReTooltip />
-                              <Legend verticalAlign="bottom" height={36}/>
-                            </RePieChart>
-                          </ResponsiveContainer>
-                        </div>
-
-                        <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm h-80">
-                          <h3 className="font-bold text-gray-700 mb-4 flex items-center gap-2">
-                            <Building className="w-4 h-4" /> Accommodation Breakdown
-                          </h3>
-                          {attending > 0 ? (
-                            <ResponsiveContainer width="100%" height="100%">
-                              <RePieChart>
-                                <Pie
-                                  data={accommodationData}
-                                  cx="50%"
-                                  cy="50%"
-                                  innerRadius={60}
-                                  outerRadius={80}
-                                  paddingAngle={5}
-                                  dataKey="value"
-                                >
-                                  {accommodationData.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={entry.color} />
-                                  ))}
-                                </Pie>
-                                <ReTooltip />
-                                <Legend verticalAlign="bottom" height={36}/>
-                              </RePieChart>
-                            </ResponsiveContainer>
-                          ) : (
-                            <div className="h-full flex items-center justify-center text-gray-400">No data yet</div>
-                          )}
-                        </div>
-                      </div>
                     </>
                   )}
              </div>
