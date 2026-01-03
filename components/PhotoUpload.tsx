@@ -59,11 +59,6 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
           throw new Error(`${file.name} is not an image file`);
         }
 
-        // Validate file size (5MB limit)
-        if (file.size > 5 * 1024 * 1024) {
-          throw new Error(`${file.name} is too large (max 5MB)`);
-        }
-
         return photoService.uploadPhoto(file, category);
       });
 
@@ -143,7 +138,7 @@ const PhotoUpload: React.FC<PhotoUploadProps> = ({
               {isUploading ? 'Uploading...' : 'Click to upload photos'}
             </p>
             <p className="text-xs text-gray-500">
-              PNG, JPG up to 5MB each ({photos.length}/{maxFiles})
+              PNG, JPG ({photos.length}/{maxFiles})
             </p>
           </div>
         </label>

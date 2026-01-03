@@ -1,41 +1,52 @@
 import { supabase } from './supabaseClient'
 import type { Guest } from '../types'
+import type { Database } from '../types/database'
 
-export interface GuestUpdate {
+type GuestRow = Database['public']['Tables']['guests']['Row']
+type GuestInsert = Database['public']['Tables']['guests']['Insert']
+type GuestUpdate = Database['public']['Tables']['guests']['Update']
+
+export interface GuestUpdateData {
   id: string
   data: Partial<Guest>
 }
 
 // Convert Supabase guest format to our Guest type
-const convertSupabaseGuestToGuest = (supabaseGuest: any): Guest => ({
+const convertSupabaseGuestToGuest = (supabaseGuest: GuestRow): Guest => ({
   id: supabaseGuest.id,
-  familyId: supabaseGuest.family_id,
+  familyId: supabaseGuest.family_id || undefined,
   firstName: supabaseGuest.first_name,
   lastName: supabaseGuest.last_name,
-  email: supabaseGuest.email,
-  rsvpStatus: supabaseGuest.rsvp_status,
-  accommodation: supabaseGuest.accommodation,
-  roomDetail: supabaseGuest.room_detail,
-  bookingMethod: supabaseGuest.booking_method,
-  mealChoice: supabaseGuest.meal_choice,
-  note: supabaseGuest.note,
-  lastUpdated: supabaseGuest.last_updated,
+  email: supabaseGuest.email || undefined,
+  rsvpStatus: supabaseGuest.rsvp_status as Guest['rsvpStatus'],
+  accommodation: (supabaseGuest.accommodation as Guest['accommodation']) || undefined,
+  roomDetail: supabaseGuest.room_detail || undefined,
+  bookingMethod: supabaseGuest.booking_method || undefined,
+  mealChoice: supabaseGuest.meal_choice || undefined,
+  note: supabaseGuest.note || undefined,
+  plusOne: supabaseGuest.plus_one || false,
+  plusOneName: supabaseGuest.plus_one_name || undefined,
+  lastUpdated: supabaseGuest.last_updated || undefined,
 })
 
 // Convert our Guest type to Supabase format
-const convertGuestToSupabase = (guest: Partial<Guest>) => ({
-  family_id: guest.familyId,
-  first_name: guest.firstName,
-  last_name: guest.lastName,
-  email: guest.email,
-  rsvp_status: guest.rsvpStatus,
-  accommodation: guest.accommodation,
-  room_detail: guest.roomDetail,
-  booking_method: guest.bookingMethod,
-  meal_choice: guest.mealChoice,
-  note: guest.note,
-  last_updated: guest.lastUpdated || new Date().toISOString(),
-})
+const convertGuestToSupabase = (guest: Partial<Guest>): GuestUpdate => {
+  return {
+    family_id: guest.familyId,
+    first_name: guest.firstName,
+    last_name: guest.lastName,
+    email: guest.email,
+    rsvp_status: guest.rsvpStatus,
+    accommodation: guest.accommodation === '' ? null : guest.accommodation,
+    room_detail: guest.roomDetail,
+    booking_method: guest.bookingMethod,
+    meal_choice: guest.mealChoice,
+    note: guest.note,
+    plus_one: guest.plusOne,
+    plus_one_name: guest.plusOneName,
+    last_updated: guest.lastUpdated || new Date().toISOString(),
+  }
+}
 
 export const guestService = {
   // Get all guests
@@ -50,7 +61,11 @@ export const guestService = {
       throw error
     }
 
-    return data.map(convertSupabaseGuestToGuest)
+    if (!data) return []
+
+    // Cast data to avoid 'never' inference issues
+    const guests = data as unknown as GuestRow[]
+    return guests.map(convertSupabaseGuestToGuest)
   },
 
   // Get guest by ID
@@ -66,14 +81,31 @@ export const guestService = {
       return null
     }
 
-    return convertSupabaseGuestToGuest(data)
+    const guest = data as unknown as GuestRow
+    return convertSupabaseGuestToGuest(guest)
   },
 
   // Create new guest
   async createGuest(guestData: Omit<Guest, 'id' | 'lastUpdated'>): Promise<Guest> {
-    const { data, error } = await supabase
-      .from('guests')
-      .insert([convertGuestToSupabase(guestData)])
+    const insertData: GuestInsert = {
+      family_id: guestData.familyId,
+      first_name: guestData.firstName,
+      last_name: guestData.lastName,
+      email: guestData.email,
+      rsvp_status: guestData.rsvpStatus,
+      accommodation: guestData.accommodation === '' ? null : guestData.accommodation,
+      room_detail: guestData.roomDetail,
+      booking_method: guestData.bookingMethod,
+      meal_choice: guestData.mealChoice,
+      note: guestData.note,
+      plus_one: guestData.plusOne,
+      plus_one_name: guestData.plusOneName,
+      last_updated: new Date().toISOString()
+    }
+
+    const { data, error } = await (supabase
+      .from('guests') as any)
+      .insert([insertData])
       .select()
       .single()
 
@@ -82,17 +114,20 @@ export const guestService = {
       throw error
     }
 
-    return convertSupabaseGuestToGuest(data)
+    const guest = data as unknown as GuestRow
+    return convertSupabaseGuestToGuest(guest)
   },
 
   // Update guest
   async updateGuest(id: string, updates: Partial<Guest>): Promise<Guest> {
-    const { data, error } = await supabase
-      .from('guests')
-      .update({
-        ...convertGuestToSupabase(updates),
-        updated_at: new Date().toISOString()
-      })
+    const updateData: GuestUpdate = {
+      ...convertGuestToSupabase(updates),
+      updated_at: new Date().toISOString()
+    }
+
+    const { data, error } = await (supabase
+      .from('guests') as any)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single()
@@ -102,7 +137,8 @@ export const guestService = {
       throw error
     }
 
-    return convertSupabaseGuestToGuest(data)
+    const guest = data as unknown as GuestRow
+    return convertSupabaseGuestToGuest(guest)
   },
 
   // Delete guest
@@ -119,7 +155,7 @@ export const guestService = {
   },
 
   // Batch update guests (for RSVP modal)
-  async batchUpdateGuests(updates: GuestUpdate[]): Promise<Guest[]> {
+  async batchUpdateGuests(updates: GuestUpdateData[]): Promise<Guest[]> {
     const results: Guest[] = []
 
     for (const update of updates) {
@@ -148,7 +184,10 @@ export const guestService = {
       throw error
     }
 
-    return data.map(convertSupabaseGuestToGuest)
+    if (!data) return []
+
+    const guests = data as unknown as GuestRow[]
+    return guests.map(convertSupabaseGuestToGuest)
   },
 
   // Get guest statistics
@@ -162,11 +201,14 @@ export const guestService = {
       throw error
     }
 
+    // Cast data to known shape
+    const guests = data as unknown as Pick<GuestRow, 'rsvp_status'>[]
+
     const stats = {
-      total: data.length,
-      attending: data.filter(g => g.rsvp_status === 'Attending').length,
-      declined: data.filter(g => g.rsvp_status === 'Declined').length,
-      pending: data.filter(g => g.rsvp_status === 'Pending').length,
+      total: guests.length,
+      attending: guests.filter(g => g.rsvp_status === 'Attending').length,
+      declined: guests.filter(g => g.rsvp_status === 'Declined').length,
+      pending: guests.filter(g => g.rsvp_status === 'Pending').length,
     }
 
     return stats
@@ -188,10 +230,12 @@ export const guestService = {
       throw error
     }
 
+    const guests = data as unknown as Pick<GuestRow, 'rsvp_status' | 'updated_at'>[]
+
     // Group by date and status
     const trends: Record<string, { date: string; attending: number; declined: number; pending: number }> = {}
 
-    data.forEach(guest => {
+    guests.forEach(guest => {
       const date = new Date(guest.updated_at).toISOString().split('T')[0] // YYYY-MM-DD format
       if (!trends[date]) {
         trends[date] = { date, attending: 0, declined: 0, pending: 0 }
@@ -217,11 +261,13 @@ export const guestService = {
       throw error
     }
 
+    const guests = data as unknown as Pick<GuestRow, 'accommodation' | 'rsvp_status'>[]
+
     const analytics = {
-      andaz: data.filter(g => g.accommodation === 'andaz').length,
-      ac_hotel: data.filter(g => g.accommodation === 'ac_hotel').length,
-      self: data.filter(g => g.accommodation === 'self').length,
-      unknown: data.filter(g => !g.accommodation).length,
+      andaz: guests.filter(g => g.accommodation === 'andaz').length,
+      ac_hotel: guests.filter(g => g.accommodation === 'ac_hotel').length,
+      self: guests.filter(g => g.accommodation === 'self').length,
+      unknown: guests.filter(g => !g.accommodation).length,
     }
 
     return analytics
@@ -238,12 +284,14 @@ export const guestService = {
       throw error
     }
 
-    const totalInvitations = data.length
-    const responses = data.filter(g => g.rsvp_status !== 'Pending').length
-    const attending = data.filter(g => g.rsvp_status === 'Attending').length
+    const guests = data as unknown as Pick<GuestRow, 'rsvp_status' | 'created_at' | 'updated_at'>[]
+
+    const totalInvitations = guests.length
+    const responses = guests.filter(g => g.rsvp_status !== 'Pending').length
+    const attending = guests.filter(g => g.rsvp_status === 'Attending').length
 
     // Calculate average response time
-    const responseTimes = data
+    const responseTimes = guests
       .filter(g => g.rsvp_status !== 'Pending' && g.updated_at)
       .map(g => new Date(g.updated_at).getTime() - new Date(g.created_at).getTime())
       .filter(time => time > 0)

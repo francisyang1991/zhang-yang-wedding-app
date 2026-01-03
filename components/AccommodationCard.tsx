@@ -176,8 +176,10 @@ const AccommodationCard: React.FC<Props> = ({ data, pricingMode, viewMode }) => 
                     const isMin = benefit.includes('Stay') || benefit.includes('Minimal');
                     const isGift = benefit.includes('GIFT');
                     const isSpecial = benefit.includes('afterparty') || benefit.includes('Indoor pool');
-                    // Ensure bed type is not in details by skipping any benefit mentioning it
+                    
+                    // Filter out complimentary minibar and bed type from display
                     if (benefit.toLowerCase().includes('bed type')) return null;
+                    if (benefit.includes('Complimentary Minibar')) return null;
                     
                     return (
                       <li key={idx} className={`flex items-start gap-2 text-xs ${isMin || isGift || isSpecial ? 'font-bold text-wedding-gold' : 'text-gray-600'}`}>
@@ -203,13 +205,14 @@ const AccommodationCard: React.FC<Props> = ({ data, pricingMode, viewMode }) => 
         )}
 
         <div className="flex gap-2 mt-auto">
-          <button className={`flex-1 py-3 rounded-md font-bold text-xs transition-colors uppercase tracking-widest ${
-              isOnsite 
-                  ? 'bg-wedding-text text-white hover:bg-black shadow-md' 
-                  : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-          }`}>
-              {isOnsite ? 'Reserve via Couple' : 'Inquire'}
-          </button>
+          {isOnsite ? (
+             <div className="w-full"></div> 
+          ) : (
+            <button className={`w-full py-3 rounded-md font-bold text-xs transition-colors uppercase tracking-widest bg-white border border-gray-300 text-gray-700 hover:bg-gray-50`}>
+                Inquire
+            </button>
+          )}
+          
           {data.virtualTourUrl && (
             <a href={data.virtualTourUrl} target="_blank" rel="noopener noreferrer" className="p-3 rounded-md border border-wedding-gold/30 text-wedding-gold hover:bg-wedding-gold/5 transition-colors">
               <ExternalLink className="w-4 h-4" />

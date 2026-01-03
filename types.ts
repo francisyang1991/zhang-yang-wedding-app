@@ -81,5 +81,7 @@ export interface Guest {
   bookingMethod?: string; // e.g., 'group_rate'
   mealChoice?: string; // e.g., 'Standard', 'Veg', 'Kids'
   note?: string;
+  plusOne?: boolean;
+  plusOneName?: string;
   lastUpdated?: string;
 }
