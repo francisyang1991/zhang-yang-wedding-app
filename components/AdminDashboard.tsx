@@ -432,9 +432,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                 </table>
              </div>
           </div>
-                  </>
                 )}
              </div>
+          </>
           )}
 
           {activeTab === 'photos' && (
@@ -453,7 +453,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                          Couple Profile Photos
                       </h3>
                       <p className="text-sm text-gray-600 mb-4">
-                         Upload photos of you and your partner. Mark one as "featured" to display in the hero section.
+                         Upload photos of you and your partner. Mark one as "featured" to display it in the hero section.
                       </p>
                       <PhotoUpload
                          category="couple"
@@ -560,6 +560,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                    </div>
                 </div>
              </div>
+          </>
           )}
        </div>
     </div>
