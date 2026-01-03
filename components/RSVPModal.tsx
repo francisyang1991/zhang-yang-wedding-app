@@ -165,7 +165,8 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
   };
 
   const handleAddGuest = () => {
-    const tempId = `plusone-${Date.now()}`;
+    // Generate a temporary UUID for the new guest to ensure valid format for DB inserts
+    const tempId = crypto.randomUUID();
     const newGuest: Guest = {
         id: tempId,
         familyId: familyMembers[0]?.familyId || crypto.randomUUID(),
