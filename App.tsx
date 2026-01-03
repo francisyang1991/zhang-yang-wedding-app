@@ -184,7 +184,7 @@ const App: React.FC = () => {
                </div>
             ) : (
                <div className="py-10">
-                  <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-6">Our Journey</h2>
+                  <h2 className="font-script text-5xl md:text-6xl text-wedding-text mb-6">Our Journey</h2>
                   <button onClick={() => setIsStoryOpen(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
                      Read Our Story <ChevronDown className="w-4 h-4" />
                   </button>

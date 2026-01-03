@@ -79,12 +79,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
             const initialDietary: Record<string, string> = {};
             
             uniqueFamily.forEach(m => {
-                // Validate meal choice - ensure it matches available options
-                const validMealChoices = ['Wagyu & Lobster', 'Kids Meal'];
-                const mealChoice = m.mealChoice && validMealChoices.includes(m.mealChoice)
-                    ? m.mealChoice
-                    : 'Wagyu & Lobster'; // Default to main course if invalid
-                initialMeals[m.id] = mealChoice;
+                initialMeals[m.id] = m.mealChoice || 'Wagyu & Lobster';
                 initialDietary[m.id] = m.note || ''; // Assuming 'note' stored dietary info previously
             });
             setMealMap(initialMeals);
@@ -184,12 +179,6 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
              roomDetailString = rsvpStayChoice; // Fallback for others
         }
 
-        // Ensure meal choice is valid before saving
-        const validMealChoices = ['Wagyu & Lobster', 'Kids Meal'];
-        const mealChoice = validMealChoices.includes(mealMap[member.id])
-            ? mealMap[member.id]
-            : 'Wagyu & Lobster'; // Default fallback
-
         return {
             id: member.id,
             data: {
@@ -198,7 +187,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                 email: member.email,
                 familyId: member.familyId,
                 rsvpStatus: 'Attending' as RsvpStatus, // Implicitly attending
-                mealChoice: mealChoice,
+                mealChoice: mealMap[member.id],
                 note: dietaryMap[member.id], // Saving dietary restrictions in note field
                 accommodation: rsvpStayChoice as any,
                 roomDetail: roomDetailString,
@@ -326,7 +315,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                                 className="w-full text-sm border-gray-200 bg-gray-50 rounded border p-2 focus:outline-none"
                                             >
                                                 <option value="Wagyu & Lobster">Wagyu & Spiny Lobster</option>
-                                                <option value="Kids Meal">Special Dietary (Fill in below)</option>
+                                                <option value="Kids Meal">Kids Meal</option>
                                             </select>
                                             <div className="relative">
                                                 <AlertCircle className="absolute left-2.5 top-2.5 w-3 h-3 text-gray-400" />
