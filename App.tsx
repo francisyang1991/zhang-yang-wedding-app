@@ -184,7 +184,6 @@ const App: React.FC = () => {
                </div>
             ) : (
                <div className="py-10">
-                  <Heart className="w-6 h-6 text-wedding-gold mx-auto mb-6" />
                   <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-6">Our Journey</h2>
                   <button onClick={() => setIsStoryOpen(true)} className="bg-white border border-gray-200 text-gray-600 px-8 py-3 rounded-full text-xs font-bold uppercase tracking-widest hover:border-wedding-gold transition-all flex items-center gap-2 mx-auto">
                      Read Our Story <ChevronDown className="w-4 h-4" />
@@ -200,7 +199,7 @@ const App: React.FC = () => {
            <Heart className="w-6 h-6 text-wedding-gold mx-auto mb-6" />
            <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-6">Stay With Us in Paradise</h2>
            <p className="text-gray-600 leading-relaxed mb-8 font-light text-lg">
-             We have secured a block of rooms at the stunning <strong>Andaz Maui</strong> with a discounted rate compared to a public rate. 
+             We have secured a block of rooms at the stunning <strong>Andaz Maui</strong>. 
              Xiaodong & Yuwen are providing a special gift to our guests to help with travel costs.
            </p>
            <div className="bg-white border border-wedding-gold/20 rounded-xl p-6 mb-8 shadow-sm">
