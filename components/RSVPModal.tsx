@@ -1,7 +1,8 @@
 
-import React, { useState } from 'react';
-import { X, PartyPopper, Heart, Loader2, Users, UserPlus, Search, Utensils, Bed, Trash2, PlusCircle, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { X, PartyPopper, Heart, Loader2, Users, UserPlus, Search, Utensils, Bed, Trash2, PlusCircle, AlertCircle, Phone, Mail } from 'lucide-react';
 import { Guest, RsvpStatus } from '../types';
+import { guestService } from '../services/guestService';
 
 interface RSVPModalProps {
   isOpen: boolean;
@@ -21,8 +22,10 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
 
   // Form State
   const [familyMembers, setFamilyMembers] = useState<Guest[]>([]);
-  const [mealMap, setMealMap] = useState<Record<string, string>>({}); 
+  const [mealMap, setMealMap] = useState<Record<string, string>>({});
   const [dietaryMap, setDietaryMap] = useState<Record<string, string>>({});
+  const [phoneMap, setPhoneMap] = useState<Record<string, string>>({});
+  const [emailMap, setEmailMap] = useState<Record<string, string>>({});
   
   const [rsvpStayChoice, setRsvpStayChoice] = useState<string>('');
   const [rsvpRoomView, setRsvpRoomView] = useState<string>('');
@@ -49,97 +52,124 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setRsvpBedPreference('');
     setMealMap({});
     setDietaryMap({});
+    setPhoneMap({});
+    setEmailMap({});
     setErrorMessage('');
   };
 
-  const handleNameSearch = (e: React.FormEvent) => {
+  const handleNameSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
     setErrorMessage('');
-    
-    setTimeout(() => {
-        const mainGuest = guestList.find(g => 
-            `${g.firstName} ${g.lastName}`.toLowerCase() === searchName.toLowerCase() ||
-            g.firstName.toLowerCase() === searchName.toLowerCase()
+
+    try {
+      // Fetch all guests from Supabase
+      const allGuests = await guestService.getAllGuests();
+
+      const mainGuest = allGuests.find(g =>
+        `${g.firstName} ${g.lastName}`.toLowerCase() === searchName.toLowerCase() ||
+        g.firstName.toLowerCase() === searchName.toLowerCase() ||
+        g.email?.toLowerCase() === searchName.toLowerCase()
+      );
+
+      if (mainGuest) {
+        const family = allGuests.filter(g =>
+          (g.familyId && g.familyId === mainGuest.familyId) || g.id === mainGuest.id
         );
 
-        if (mainGuest) {
-            const family = guestList.filter(g => 
-                (g.familyId && g.familyId === mainGuest.familyId) || g.id === mainGuest.id
-            );
-            
-            // Deduplicate
-            const uniqueFamily = Array.from(new Set(family.map(g => g.id)))
-                .map(id => family.find(g => g.id === id)!);
+        // Deduplicate
+        const uniqueFamily = Array.from(new Set(family.map(g => g.id)))
+          .map(id => family.find(g => g.id === id)!);
 
-            setFamilyMembers(uniqueFamily);
-            
-            // Initialize Maps
-            const initialMeals: Record<string, string> = {};
-            const initialDietary: Record<string, string> = {};
-            
-            uniqueFamily.forEach(m => {
-                initialMeals[m.id] = m.mealChoice || 'Wagyu & Lobster';
-                initialDietary[m.id] = m.note || ''; // Assuming 'note' stored dietary info previously
-            });
-            setMealMap(initialMeals);
-            setDietaryMap(initialDietary);
+        setFamilyMembers(uniqueFamily);
 
-            // Load Accommodation (from first guest with data)
-            const existingAcc = uniqueFamily.find(m => m.accommodation);
-            if (existingAcc) {
-                setRsvpStayChoice(existingAcc.accommodation || '');
-                setRsvpBookingMethod(existingAcc.bookingMethod || '');
-                
-                // Parse Room Detail for View and Bed
-                if (existingAcc.roomDetail) {
-                   const details = existingAcc.roomDetail.split('|').map(s => s.trim());
-                   // Heuristic: Check if detail matches known views
-                   const view = details.find(d => d.includes('View') || d.includes('Standard'));
-                   const bed = details.find(d => d.includes('King') || d.includes('Queen'));
-                   if (view) setRsvpRoomView(view);
-                   if (bed) setRsvpBedPreference(bed);
-                }
-            } else {
-                setRsvpStayChoice('');
-                setRsvpRoomView('');
-                setRsvpBedPreference('');
-                setRsvpBookingMethod('');
-            }
-            setStep(2);
+        // Initialize Maps with enhanced fields
+        const initialMeals: Record<string, string> = {};
+        const initialDietary: Record<string, string> = {};
+        const initialPhones: Record<string, string> = {};
+        const initialEmails: Record<string, string> = {};
+
+        uniqueFamily.forEach(m => {
+          initialMeals[m.id] = m.mealChoice || 'Wagyu & Lobster';
+          initialDietary[m.id] = m.note || ''; // Using note for dietary initially, will enhance later
+          initialPhones[m.id] = ''; // Will be populated from database in future
+          initialEmails[m.id] = m.email || '';
+        });
+        setMealMap(initialMeals);
+        setDietaryMap(initialDietary);
+        setPhoneMap(initialPhones);
+        setEmailMap(initialEmails);
+
+        // Load Accommodation (from first guest with data)
+        const existingAcc = uniqueFamily.find(m => m.accommodation);
+        if (existingAcc) {
+          setRsvpStayChoice(existingAcc.accommodation || '');
+          setRsvpBookingMethod(existingAcc.bookingMethod || '');
+
+          // Parse Room Detail for View and Bed
+          if (existingAcc.roomDetail) {
+             const details = existingAcc.roomDetail.split('|').map(s => s.trim());
+             // Heuristic: Check if detail matches known views
+             const view = details.find(d => d.includes('View') || d.includes('Standard'));
+             const bed = details.find(d => d.includes('King') || d.includes('Queen'));
+             if (view) setRsvpRoomView(view);
+             if (bed) setRsvpBedPreference(bed);
+          }
         } else {
-            setErrorMessage('Sorry, we couldn\'t find an invitation under that name.');
+          setRsvpStayChoice('');
+          setRsvpRoomView('');
+          setRsvpBedPreference('');
+          setRsvpBookingMethod('');
         }
-        setIsSearching(false);
-    }, 600);
+        setStep(2);
+      } else {
+        setErrorMessage('Sorry, we couldn\'t find an invitation under that name. Please check your invitation for the correct spelling.');
+      }
+    } catch (error) {
+      console.error('Error searching for guest:', error);
+      setErrorMessage('Sorry, there was an error searching for your invitation. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSearching(true);
-    setTimeout(() => {
-        const tempId = `new-${Date.now()}`;
-        const newGuest: Guest = {
-            id: tempId,
-            familyId: `fam-${Date.now()}`,
-            firstName: newFirstName,
-            lastName: newLastName,
-            email: newEmail,
-            rsvpStatus: 'Pending'
-        };
-        setFamilyMembers([newGuest]);
-        setMealMap({ [tempId]: 'Wagyu & Lobster' });
-        setDietaryMap({ [tempId]: '' });
-        setIsSearching(false);
-        setStep(2);
-    }, 600);
+    setErrorMessage('');
+
+    try {
+      // Create new guest in Supabase
+      const newGuestData = {
+        firstName: newFirstName,
+        lastName: newLastName,
+        email: newEmail,
+        rsvpStatus: 'Pending' as RsvpStatus,
+        familyId: crypto.randomUUID()
+      };
+
+      const createdGuest = await guestService.createGuest(newGuestData);
+
+      setFamilyMembers([createdGuest]);
+      setMealMap({ [createdGuest.id]: 'Wagyu & Lobster' });
+      setDietaryMap({ [createdGuest.id]: '' });
+      setPhoneMap({ [createdGuest.id]: '' });
+      setEmailMap({ [createdGuest.id]: newEmail });
+      setStep(2);
+    } catch (error) {
+      console.error('Error registering new guest:', error);
+      setErrorMessage('Sorry, there was an error creating your invitation. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   const handleAddGuest = () => {
-    const tempId = `plusone-${Date.now()}`;
+    // Generate a temporary UUID for the new guest to ensure valid format for DB inserts
+    const tempId = crypto.randomUUID();
     const newGuest: Guest = {
         id: tempId,
-        familyId: familyMembers[0]?.familyId || `fam-${Date.now()}`,
+        familyId: familyMembers[0]?.familyId || crypto.randomUUID(),
         firstName: '',
         lastName: '',
         rsvpStatus: 'Pending'
@@ -147,6 +177,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setFamilyMembers([...familyMembers, newGuest]);
     setMealMap(prev => ({ ...prev, [tempId]: 'Wagyu & Lobster' }));
     setDietaryMap(prev => ({ ...prev, [tempId]: '' }));
+    setEmailMap(prev => ({ ...prev, [tempId]: '' })); // Initialize email map for plus-one guests
   };
 
   const handleRemoveGuest = (id: string) => {
@@ -161,9 +192,9 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setFamilyMembers(prev => prev.map(g => g.id === id ? { ...g, [field]: value } : g));
   };
 
-  const handleFinalSubmit = (e: React.FormEvent) => {
+  const handleFinalSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     // Validation
     const incompleteGuests = familyMembers.some(g => !g.firstName || !g.lastName);
     if (incompleteGuests) {
@@ -171,44 +202,57 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
         return;
     }
 
-    const updates = familyMembers.map(member => {
+    setIsSearching(true);
+    setErrorMessage('');
+
+    try {
+      // Prepare updates for Supabase
+      const updates = familyMembers.map(member => {
         let roomDetailString = '';
         if (rsvpStayChoice === 'andaz') {
-            roomDetailString = [rsvpRoomView, rsvpBedPreference].filter(Boolean).join(' | ');
+          roomDetailString = [rsvpRoomView, rsvpBedPreference].filter(Boolean).join(' | ');
         } else if (rsvpStayChoice) {
-             roomDetailString = rsvpStayChoice; // Fallback for others
+          roomDetailString = rsvpStayChoice; // Fallback for others
         }
 
         return {
-            id: member.id,
-            data: {
-                firstName: member.firstName,
-                lastName: member.lastName,
-                email: member.email,
-                familyId: member.familyId,
-                rsvpStatus: 'Attending' as RsvpStatus, // Implicitly attending
-                mealChoice: mealMap[member.id],
-                note: dietaryMap[member.id], // Saving dietary restrictions in note field
-                accommodation: rsvpStayChoice as any,
-                roomDetail: roomDetailString,
-                bookingMethod: rsvpBookingMethod,
-            }
+          id: member.id,
+          data: {
+            firstName: member.firstName,
+            lastName: member.lastName,
+            email: emailMap[member.id] || member.email,
+            familyId: member.familyId,
+            rsvpStatus: 'Attending' as RsvpStatus, // Implicitly attending
+            mealChoice: mealMap[member.id],
+            note: dietaryMap[member.id], // Saving dietary restrictions in note field
+            accommodation: rsvpStayChoice as any,
+            roomDetail: roomDetailString,
+            bookingMethod: rsvpBookingMethod,
+          }
         };
-    });
-    
-    // Note: rsvpNote (General/Room note) is not currently saved to a specific field in this simple schema 
-    // unless we append it to the first guest's note or similar. 
-    // For now, we'll append it to the first guest's note if it exists.
-    if (updates.length > 0 && rsvpNote) {
-        updates[0].data.note = `${updates[0].data.note ? updates[0].data.note + ' | ' : ''}General: ${rsvpNote}`;
-    }
+      });
 
-    onSave(updates);
-    setStep(3);
-    setTimeout(() => {
+      // Append general note if provided
+      if (updates.length > 0 && rsvpNote) {
+        updates[0].data.note = `${updates[0].data.note ? updates[0].data.note + ' | ' : ''}General: ${rsvpNote}`;
+      }
+
+      // Notify parent component to handle all persistence and state updates
+      // Parent will save to Supabase, update local state, and show notifications
+      await onSave(updates);
+
+      setStep(3);
+      setTimeout(() => {
         onClose();
         setTimeout(resetModal, 500);
-    }, 2500);
+      }, 2500);
+
+    } catch (error) {
+      console.error('Error saving RSVP:', error);
+      setErrorMessage('Sorry, there was an error saving your RSVP. Please try again.');
+    } finally {
+      setIsSearching(false);
+    }
   };
 
   return (
@@ -352,54 +396,74 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                     </select>
                                 </div>
                                 
-                                {rsvpStayChoice === 'andaz' && (
+                                {rsvpStayChoice && rsvpStayChoice !== 'andaz_villa' && (
                                     <div className="animate-fade-in space-y-4 bg-wedding-sand/50 p-4 rounded-lg border border-wedding-gold/20">
                                         
-                                        {/* Room Type Sub-Selection */}
+                                        {rsvpStayChoice === 'andaz' && (
+                                            <>
+                                                {/* Room Type Sub-Selection */}
+                                                <div>
+                                                    <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Room View Preference</label>
+                                                    <select 
+                                                        required 
+                                                        value={rsvpRoomView} 
+                                                        onChange={(e) => setRsvpRoomView(e.target.value)} 
+                                                        className="w-full bg-white border border-wedding-gold/30 rounded p-2 text-sm focus:outline-none"
+                                                    >
+                                                        <option value="">Select View...</option>
+                                                        <option value="Standard Resort View">Standard Resort View</option>
+                                                        <option value="Partial Ocean View">Partial Ocean View</option>
+                                                        <option value="Full Ocean View">Full Ocean View</option>
+                                                    </select>
+                                                </div>
+
+                                                {/* Bed Preference */}
+                                                <div>
+                                                    <div className="flex items-center gap-2 text-xs font-bold text-wedding-gold uppercase mb-2">
+                                                        <Bed className="w-4 h-4" /> Bed Preference
+                                                    </div>
+                                                    <div className="flex gap-4">
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="radio" 
+                                                                name="bedPref" 
+                                                                value="1 King" 
+                                                                checked={rsvpBedPreference === '1 King'} 
+                                                                onChange={(e) => setRsvpBedPreference(e.target.value)}
+                                                                className="accent-wedding-gold"
+                                                            />
+                                                            <span className="text-sm text-gray-700">1 King Bed</span>
+                                                        </label>
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="radio" 
+                                                                name="bedPref" 
+                                                                value="2 Queen" 
+                                                                checked={rsvpBedPreference === '2 Queen'} 
+                                                                onChange={(e) => setRsvpBedPreference(e.target.value)}
+                                                                className="accent-wedding-gold"
+                                                            />
+                                                            <span className="text-sm text-gray-700">2 Queen Beds</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+
+                                        {/* Booking Method / Duration */}
                                         <div>
-                                            <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Room View Preference</label>
+                                            <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Stay Duration</label>
                                             <select 
                                                 required 
-                                                value={rsvpRoomView} 
-                                                onChange={(e) => setRsvpRoomView(e.target.value)} 
+                                                value={rsvpBookingMethod} 
+                                                onChange={(e) => setRsvpBookingMethod(e.target.value)} 
                                                 className="w-full bg-white border border-wedding-gold/30 rounded p-2 text-sm focus:outline-none"
                                             >
-                                                <option value="">Select View...</option>
-                                                <option value="Standard Resort View">Standard Resort View</option>
-                                                <option value="Partial Ocean View">Partial Ocean View</option>
-                                                <option value="Full Ocean View">Full Ocean View</option>
+                                                <option value="">Select Duration...</option>
+                                                <option value="2 Nights">2 Nights</option>
+                                                <option value="3 Nights">3 Nights</option>
+                                                <option value="More than 3 Nights">More than 3 Nights</option>
                                             </select>
-                                        </div>
-
-                                        {/* Bed Preference */}
-                                        <div>
-                                            <div className="flex items-center gap-2 text-xs font-bold text-wedding-gold uppercase mb-2">
-                                                <Bed className="w-4 h-4" /> Bed Preference
-                                            </div>
-                                            <div className="flex gap-4">
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input 
-                                                        type="radio" 
-                                                        name="bedPref" 
-                                                        value="1 King" 
-                                                        checked={rsvpBedPreference === '1 King'} 
-                                                        onChange={(e) => setRsvpBedPreference(e.target.value)}
-                                                        className="accent-wedding-gold"
-                                                    />
-                                                    <span className="text-sm text-gray-700">1 King Bed</span>
-                                                </label>
-                                                <label className="flex items-center gap-2 cursor-pointer">
-                                                    <input 
-                                                        type="radio" 
-                                                        name="bedPref" 
-                                                        value="2 Queen" 
-                                                        checked={rsvpBedPreference === '2 Queen'} 
-                                                        onChange={(e) => setRsvpBedPreference(e.target.value)}
-                                                        className="accent-wedding-gold"
-                                                    />
-                                                    <span className="text-sm text-gray-700">2 Queen Beds</span>
-                                                </label>
-                                            </div>
                                         </div>
                                     </div>
                                 )}

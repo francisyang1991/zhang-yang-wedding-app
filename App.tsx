@@ -12,6 +12,9 @@ import AdminDashboard from './components/AdminDashboard';
 import MenuPreview from './components/MenuPreview';
 import ScheduleModal from './components/ScheduleModal';
 import { Accommodation, Guest } from './types';
+import { photoService } from './services/photoService';
+import { guestService } from './services/guestService';
+import { supabase } from './services/supabaseClient';
 import { Calendar, MapPin, Heart, Gift, Check, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
 
 const HERO_IMAGES = [
@@ -21,17 +24,19 @@ const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1519046904884-53103b34b206?q=80&w=2000&auto=format&fit=crop"  // Wedding Vibe
 ];
 
+// Default fallback photo URL
+const DEFAULT_COUPLE_PHOTO = "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?q=80&w=400&auto=format&fit=crop&crop=face";
+
 const App: React.FC = () => {
   const [accommodations, setAccommodations] = useState<Accommodation[]>([
     ...ONSITE_OPTIONS,
     ...MANUAL_HOTEL_OPTIONS
   ]);
   
-  // Persistence Layer: Load from LocalStorage or Fallback to Mock
-  const [guestList, setGuestList] = useState<Guest[]>(() => {
-    const saved = localStorage.getItem('wedding_guest_list');
-    return saved ? JSON.parse(saved) : MOCK_GUEST_LIST;
-  });
+  // Persistence Layer: Load from Supabase
+  const [guestList, setGuestList] = useState<Guest[]>([]);
+  const [isLoadingGuests, setIsLoadingGuests] = useState(true);
+  const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isRsvpOpen, setIsRsvpOpen] = useState<boolean>(false);
@@ -47,14 +52,52 @@ const App: React.FC = () => {
   
   // Hero Slideshow State
   const [currentHeroIndex, setCurrentHeroIndex] = useState(0);
+  const [couplePhotoError, setCouplePhotoError] = useState(false);
+  const [couplePhotoUrl, setCouplePhotoUrl] = useState<string>(DEFAULT_COUPLE_PHOTO);
 
   const onsite = accommodations.filter(a => a.category === 'Onsite');
   const budget = accommodations.filter(a => a.category === 'Budget');
 
-  // Persistence Effect: Save to LocalStorage whenever guestList changes
+  // Load guests from Supabase on mount
   useEffect(() => {
-    localStorage.setItem('wedding_guest_list', JSON.stringify(guestList));
-  }, [guestList]);
+    const loadGuests = async () => {
+      try {
+        const guests = await guestService.getAllGuests();
+        setGuestList(guests);
+      } catch (error) {
+        console.error('Error loading guests:', error);
+        // Fallback to mock data if Supabase fails
+        setGuestList(MOCK_GUEST_LIST);
+      } finally {
+        setIsLoadingGuests(false);
+      }
+    };
+
+    loadGuests();
+
+    // Set up real-time subscription for guest changes
+    const subscription = supabase
+      .channel('app_guests_changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'guests'
+      }, async (payload) => {
+        console.log('Real-time guest update in App:', payload);
+        try {
+          // Reload guests when any change occurs
+          const updatedGuests = await guestService.getAllGuests();
+          setGuestList(updatedGuests);
+        } catch (error) {
+          console.error('Error reloading guests:', error);
+        }
+      })
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   // Hero Slideshow Effect
   useEffect(() => {
@@ -64,37 +107,57 @@ const App: React.FC = () => {
     return () => clearInterval(timer);
   }, []);
 
-  const handleRsvpSave = (updates: { id: string; data: Partial<Guest> }[]) => {
-    setGuestList(prev => {
-      const newList = [...prev];
-      updates.forEach(update => {
-        const index = newList.findIndex(g => g.id === update.id);
-        if (index >= 0) {
-          newList[index] = { 
-            ...newList[index], 
-            ...update.data, 
-            lastUpdated: new Date().toISOString() 
-          };
-        } else {
-          const newGuest = {
-            id: update.id,
-            familyId: update.data.familyId || `fam-${Date.now()}`,
-            firstName: update.data.firstName || 'Guest',
-            lastName: update.data.lastName || '',
-            email: update.data.email,
-            rsvpStatus: update.data.rsvpStatus || 'Pending',
-            accommodation: update.data.accommodation,
-            roomDetail: update.data.roomDetail,
-            bookingMethod: update.data.bookingMethod,
-            mealChoice: update.data.mealChoice,
-            note: update.data.note,
-            lastUpdated: new Date().toISOString()
-          } as Guest;
-          newList.push(newGuest);
+  // Fetch couple photo from database
+  useEffect(() => {
+    const fetchCouplePhoto = async () => {
+      try {
+        const featuredPhoto = await photoService.getFeaturedPhoto('couple');
+        if (featuredPhoto) {
+          setCouplePhotoUrl(featuredPhoto.url);
         }
+      } catch (error) {
+        console.error('Error fetching couple photo:', error);
+        // Keep the placeholder image if fetch fails
+      }
+    };
+
+    fetchCouplePhoto();
+  }, []);
+
+  const handleRsvpSave = async (updates: { id: string; data: Partial<Guest> }[]) => {
+    try {
+      // Save to Supabase
+      await guestService.batchUpdateGuests(updates);
+
+      // Update local state by reloading from Supabase
+      const updatedGuests = await guestService.getAllGuests();
+      setGuestList(updatedGuests);
+
+      // Show success notification
+      setNotification({
+        message: 'RSVP saved successfully! 🎉',
+        type: 'success'
       });
-      return newList;
-    });
+
+      // Auto-hide notification after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+
+    } catch (error) {
+      console.error('Error saving RSVP:', error);
+      setNotification({
+        message: 'Failed to save RSVP. Please try again.',
+        type: 'error'
+      });
+
+      // Auto-hide error after 5 seconds
+      setTimeout(() => setNotification(null), 5000);
+
+      // Note: Do NOT update local state on failure to prevent data inconsistency.
+      // Real-time subscriptions will keep the UI in sync with server state.
+
+      // Re-throw the error so RSVPModal can catch it and handle the failure properly
+      throw error;
+    }
   };
 
   const scrollToSection = (e: React.MouseEvent<HTMLAnchorElement>, id: string) => {
@@ -137,6 +200,19 @@ const App: React.FC = () => {
         </div>
       </nav>
 
+      {/* Notification */}
+      {notification && (
+        <div className="fixed top-20 left-1/2 transform -translate-x-1/2 z-50">
+          <div className={`px-6 py-3 rounded-lg shadow-lg text-white font-medium ${
+            notification.type === 'success'
+              ? 'bg-green-500'
+              : 'bg-red-500'
+          }`}>
+            {notification.message}
+          </div>
+        </div>
+      )}
+
       <header id="welcome" className="relative h-[70vh] min-h-[500px] flex items-center justify-center text-center px-4 overflow-hidden">
         {/* Background Slideshow */}
         <div className="absolute inset-0 z-0 bg-gray-900">
@@ -155,7 +231,33 @@ const App: React.FC = () => {
            ))}
         </div>
 
-        <div className="relative z-10 text-white max-w-4xl mx-auto animate-fade-in">
+        {/* Couple Profile Photo */}
+        <div className="absolute left-4 md:left-8 lg:left-16 top-1/2 transform -translate-y-1/2 z-10 hidden sm:block">
+          <div className="relative">
+            <div className="w-24 h-24 md:w-32 md:h-32 lg:w-40 lg:h-40 rounded-full overflow-hidden border-4 border-white/20 shadow-2xl backdrop-blur-sm bg-white/10">
+              {couplePhotoError ? (
+                // Fallback: Show initials if image fails to load
+                <div className="w-full h-full bg-wedding-gold flex items-center justify-center text-white font-serif text-2xl md:text-3xl lg:text-4xl font-bold">
+                  X&Y
+                </div>
+              ) : (
+                <img
+                  src={couplePhotoUrl}
+                  alt="Xiaodong & Yuwen"
+                  className="w-full h-full object-cover"
+                  onError={() => {
+                    // Set error state to show fallback instead of manipulating DOM
+                    setCouplePhotoError(true);
+                  }}
+                />
+              )}
+            </div>
+            {/* Decorative ring */}
+            <div className="absolute -inset-2 border-2 border-wedding-gold/30 rounded-full animate-pulse"></div>
+          </div>
+        </div>
+
+        <div className="relative z-20 text-white max-w-4xl mx-auto animate-fade-in md:ml-16 lg:ml-24">
            <p className="text-xs md:text-sm font-bold uppercase tracking-[0.3em] mb-6 text-wedding-sand drop-shadow-md">Please join us for</p>
            <h1 className="font-serif text-6xl md:text-8xl lg:text-9xl mb-8 leading-none drop-shadow-xl">Xiaodong <span className="text-wedding-gold">&</span> Yuwen</h1>
            <div className="flex flex-col md:flex-row justify-center items-center gap-4 md:gap-10 text-sm md:text-lg font-light tracking-wide bg-black/20 backdrop-blur-md p-4 rounded-full inline-flex border border-white/20">
@@ -324,7 +426,7 @@ const App: React.FC = () => {
 
       <RSVPModal isOpen={isRsvpOpen} onClose={() => setIsRsvpOpen(false)} guestList={guestList} onSave={handleRsvpSave} />
       <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} events={WEDDING_SCHEDULE} />
-      {isAdminOpen && <AdminDashboard guests={guestList} onClose={() => setIsAdminOpen(false)} />}
+      {isAdminOpen && <AdminDashboard onClose={() => setIsAdminOpen(false)} />}
     </div>
   );
 };
