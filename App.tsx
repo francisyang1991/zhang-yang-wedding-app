@@ -154,6 +154,9 @@ const App: React.FC = () => {
 
       // Note: Do NOT update local state on failure to prevent data inconsistency.
       // Real-time subscriptions will keep the UI in sync with server state.
+
+      // Re-throw the error so RSVPModal can catch it and handle the failure properly
+      throw error;
     }
   };
 
