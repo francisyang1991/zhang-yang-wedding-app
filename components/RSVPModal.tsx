@@ -445,6 +445,22 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                                 </label>
                                             </div>
                                         </div>
+
+                                        {/* Booking Method / Duration */}
+                                        <div>
+                                            <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Stay Duration</label>
+                                            <select 
+                                                required 
+                                                value={rsvpBookingMethod} 
+                                                onChange={(e) => setRsvpBookingMethod(e.target.value)} 
+                                                className="w-full bg-white border border-wedding-gold/30 rounded p-2 text-sm focus:outline-none"
+                                            >
+                                                <option value="">Select Duration...</option>
+                                                <option value="2 Nights">2 Nights</option>
+                                                <option value="3 Nights">3 Nights</option>
+                                                <option value="More than 3 Nights">More than 3 Nights</option>
+                                            </select>
+                                        </div>
                                     </div>
                                 )}
                             </div>
