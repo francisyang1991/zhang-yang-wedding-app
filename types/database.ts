@@ -9,6 +9,50 @@ export type Json =
 export interface Database {
   public: {
     Tables: {
+      schedule_events: {
+        Row: {
+          id: string
+          title: string
+          day: string
+          date: string
+          time: string
+          location: string
+          description: string | null
+          icon: string
+          attire: string | null
+          order_index: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          title: string
+          day: string
+          date: string
+          time: string
+          location: string
+          description?: string | null
+          icon: string
+          attire?: string | null
+          order_index: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          title?: string
+          day?: string
+          date?: string
+          time?: string
+          location?: string
+          description?: string | null
+          icon?: string
+          attire?: string | null
+          order_index?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
       guests: {
         Row: {
           id: string
