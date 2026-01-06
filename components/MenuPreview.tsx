@@ -1,6 +1,5 @@
-
 import React from 'react';
-import { Utensils, Wine, Coffee, Flame, Leaf, Fish } from 'lucide-react';
+import { Utensils, Wine, Coffee, Flame, Leaf, Fish, AlertCircle } from 'lucide-react';
 
 const MenuPreview = () => {
   return (
@@ -140,10 +139,22 @@ const MenuPreview = () => {
 
       </div>
       
-      <div className="mt-24 p-6 bg-wedding-sand border border-wedding-gold/20 rounded-2xl inline-block max-w-xl">
-          <p className="text-xs text-gray-600 font-medium leading-relaxed italic">
-            "A locally-sourced Hawaiian fusion menu curated with the Andaz executive chef to celebrate the island's flavors and our favorite memories."
-          </p>
+      <div className="mt-16 flex flex-col items-center gap-4">
+        <div className="p-4 bg-gray-50 border border-gray-200 rounded-xl max-w-lg flex items-start gap-3 text-left">
+           <AlertCircle className="w-5 h-5 text-wedding-gold shrink-0 mt-0.5" />
+           <div>
+              <p className="font-bold text-sm text-gray-800 mb-1">Dietary Restrictions</p>
+              <p className="text-xs text-gray-600 leading-relaxed">
+                 Please let us know in your RSVP if you have any dietary restrictions. The venue can provide alternative entrees for guests who cannot consume beef or lobster.
+              </p>
+           </div>
+        </div>
+
+        <div className="p-6 bg-wedding-sand border border-wedding-gold/20 rounded-2xl inline-block max-w-xl">
+            <p className="text-xs text-gray-600 font-medium leading-relaxed italic">
+              "A locally-sourced Hawaiian fusion menu curated with the Andaz executive chef to celebrate the island's flavors and our favorite memories."
+            </p>
+        </div>
       </div>
     </div>
   );
