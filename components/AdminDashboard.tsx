@@ -4,9 +4,10 @@ import { Guest, RsvpStatus } from '../types';
 import PhotoUpload from './PhotoUpload';
 import RSVPTrends from './RSVPTrends';
 import StoryEditor from './StoryEditor';
+import ScheduleEditor from './ScheduleEditor';
 import { guestService } from '../services/guestService';
 import { supabase } from '../services/supabaseClient';
-import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2, TrendingUp, FileText } from 'lucide-react';
+import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2, TrendingUp, FileText, Calendar } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface AdminDashboardProps {
@@ -17,7 +18,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
-  const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'analytics' | 'content' | 'settings'>('guests');
+  const [activeTab, setActiveTab] = useState<'guests' | 'photos' | 'analytics' | 'content' | 'schedule' | 'settings'>('guests');
   const [guests, setGuests] = useState<Guest[]>([]);
   const [isLoadingGuests, setIsLoadingGuests] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
@@ -235,6 +236,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
              >
                 <FileText className="w-4 h-4" />
                 Content
+             </button>
+             <button
+                onClick={() => setActiveTab('schedule')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                   activeTab === 'schedule'
+                      ? 'bg-wedding-gold text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                }`}
+             >
+                <Calendar className="w-4 h-4" />
+                Schedule
              </button>
              <button
                 onClick={() => setActiveTab('settings')}
@@ -541,6 +553,18 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                          // Could trigger a refresh of published content elsewhere
                       }}
                    />
+                </div>
+             </div>
+          )}
+
+          {activeTab === 'schedule' && (
+             <div className="space-y-8">
+                <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                   <div className="mb-6">
+                      <h2 className="font-serif text-xl text-gray-900 mb-2">Schedule Management</h2>
+                      <p className="text-sm text-gray-600">Edit event times, locations, and descriptions</p>
+                   </div>
+                   <ScheduleEditor />
                 </div>
              </div>
           )}

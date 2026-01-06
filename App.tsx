@@ -14,6 +14,7 @@ import ScheduleModal from './components/ScheduleModal';
 import { Accommodation, Guest } from './types';
 import { photoService } from './services/photoService';
 import { guestService } from './services/guestService';
+import { scheduleService } from './services/scheduleService';
 import { supabase } from './services/supabaseClient';
 import { Calendar, MapPin, Heart, Gift, Check, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
 
@@ -46,6 +47,22 @@ const App: React.FC = () => {
   // Section Folding States
   const [isStoryOpen, setIsStoryOpen] = useState<boolean>(false);
   const [isScheduleExpanded, setIsScheduleExpanded] = useState<boolean>(false);
+  const [weddingSchedule, setWeddingSchedule] = useState(WEDDING_SCHEDULE);
+
+  // Load Schedule from Supabase
+  useEffect(() => {
+    const loadSchedule = async () => {
+      try {
+        const dbSchedule = await scheduleService.getSchedule();
+        if (dbSchedule && dbSchedule.length > 0) {
+          setWeddingSchedule(dbSchedule);
+        }
+      } catch (error) {
+        console.error('Error loading schedule:', error);
+      }
+    };
+    loadSchedule();
+  }, []);
 
   // Pricing Mode State (Kept for cards, removed for chart)
   const [pricingMode, setPricingMode] = useState<'max' | 'comfort'>('max');
@@ -293,7 +310,7 @@ const App: React.FC = () => {
            {isScheduleExpanded ? (
               <div className="animate-fade-in text-center">
                  <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-12">Wedding Weekend</h2>
-                 <Timeline events={WEDDING_SCHEDULE} />
+                 <Timeline events={weddingSchedule} />
                  <button onClick={() => setIsScheduleExpanded(false)} className="mt-12 text-gray-400 hover:text-wedding-gold text-xs font-bold uppercase tracking-widest flex items-center gap-2 mx-auto transition-colors">
                     <ChevronUp className="w-4 h-4" /> Fold Schedule
                  </button>
@@ -319,7 +336,7 @@ const App: React.FC = () => {
              Xiaodong & Yuwen are providing a special gift to our guests to help with travel costs.
              <br />
              <span className="text-sm font-bold text-wedding-gold mt-2 block">
-                Discounted rates are available for extended stays (3 days pre/post wedding).
+                Discounted rates are available for our beloved guests (2 or more days stay).
              </span>
            </p>
            <div className="bg-white border border-wedding-gold/20 rounded-xl p-6 mb-8 shadow-sm">
@@ -331,7 +348,7 @@ const App: React.FC = () => {
                  <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-100 inline-block max-w-lg">
                     <div className="flex items-start gap-3 text-left">
                        <Check className="w-5 h-5 text-wedding-gold shrink-0 mt-0.5" />
-                       <span>We will cover <strong>1 night's stay</strong> for the 06/12 wedding day (rate similar to standard room block rate in Andaz).</span>
+                       <span>We will cover <strong>1 night's stay</strong> for the 6/12 wedding day (rate similar to standard room block rate in Andaz).</span>
                     </div>
                  </div>
               </div>
@@ -444,7 +461,7 @@ const App: React.FC = () => {
       </footer>
 
       <RSVPModal isOpen={isRsvpOpen} onClose={() => setIsRsvpOpen(false)} guestList={guestList} onSave={handleRsvpSave} />
-      <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} events={WEDDING_SCHEDULE} />
+      <ScheduleModal isOpen={isScheduleOpen} onClose={() => setIsScheduleOpen(false)} events={weddingSchedule} />
       {isAdminOpen && <AdminDashboard onClose={() => setIsAdminOpen(false)} />}
     </div>
   );
