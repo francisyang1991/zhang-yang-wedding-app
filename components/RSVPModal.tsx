@@ -17,7 +17,7 @@ interface ExtendedGuest extends Guest {
 
 const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSave }) => {
   const [step, setStep] = useState<1 | 2 | 3>(1); // 1: Name Check, 2: Form, 3: Success
-  const [mode, setMode] = useState<'search' | 'register'>('search'); 
+  const [mode, setMode] = useState<'search' | 'register'>('register'); 
   const [searchName, setSearchName] = useState('');
   
   const [newFirstName, setNewFirstName] = useState('');
@@ -45,7 +45,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
 
   const resetModal = () => {
     setStep(1);
-    setMode('search');
+    setMode('register');
     setSearchName('');
     setNewFirstName('');
     setNewLastName('');
@@ -435,17 +435,26 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                             <div className="bg-white border border-wedding-gold/30 rounded-lg p-4 relative overflow-hidden">
                                 <div className="absolute top-0 right-0 bg-wedding-gold text-white text-[10px] px-2 py-0.5 font-bold uppercase">Gift</div>
                                 <h4 className="font-serif font-bold text-wedding-text text-lg mb-2 flex items-center gap-2"><Heart className="w-4 h-4 text-wedding-gold fill-current" /> Stay Onsite</h4>
-                                <p className="text-xs text-gray-600">We will cover <strong>1 night's stay</strong> for the 06/12 wedding day.</p>
+                                <p className="text-xs text-gray-600">We will cover <strong>1 night's stay</strong> for the 06/12 wedding day only with Room Block Booking.</p>
                             </div>
+
+                            <div className="bg-gray-50 p-3 rounded-lg border border-gray-200 text-xs text-gray-600 space-y-2">
+                                <p className="font-bold text-gray-800 flex items-center gap-1"><AlertCircle className="w-3 h-3 text-wedding-ocean" /> Booking Instructions:</p>
+                                <ul className="list-disc pl-4 space-y-1">
+                                    <li><strong>Standard Room:</strong> We are collecting preferences now. A booking link will be shared later. You can use any credit card to book and pay.</li>
+                                    <li><strong>Villa:</strong> We are collecting preferences now. We will coordinate and book the villa for you.</li>
+                                </ul>
+                            </div>
+
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Where are you staying?</label>
                                     <select required value={rsvpStayChoice} onChange={(e) => setRsvpStayChoice(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded p-3 text-sm focus:outline-none">
                                         <option value="">Select Option...</option>
                                         <option value="andaz">Andaz Maui (Official Room Block)</option>
-                                        <option value="andaz_villa">Andaz Villa (3-Bedroom)</option>
+                                        <option value="andaz_villa">Andaz Villa ((Official Room Block))</option>
                                         <option value="ac_hotel">AC Hotel Wailea</option>
-                                        <option value="self">Self Book / Other</option>
+                                        <option value="self">Self Book/ Other/ Airbnb/Points Redeem</option>
                                     </select>
                                 </div>
                                 
@@ -514,7 +523,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                             >
                                                 <option value="">Select Duration...</option>
                                                 <option value="2 Nights">2 Nights</option>
-                                                <option value="3 Nights">3 Nights</option>
+                                                <option value="3 Nights">3 Nights (Recommended)</option>
                                                 <option value="More than 3 Nights">More than 3 Nights</option>
                                             </select>
                                         </div>
