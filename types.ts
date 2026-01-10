@@ -75,11 +75,13 @@ export interface Guest {
   firstName: string;
   lastName: string;
   email?: string;
+  phone?: string;
   rsvpStatus: RsvpStatus;
   accommodation?: 'andaz' | 'ac_hotel' | 'self' | '';
   roomDetail?: string; // e.g., 'standard_king'
   bookingMethod?: string; // e.g., 'group_rate'
   mealChoice?: string; // e.g., 'Standard', 'Veg', 'Kids'
+  dietaryRestrictions?: string;
   note?: string;
   plusOne?: boolean;
   plusOneName?: string;

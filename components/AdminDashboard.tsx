@@ -5,9 +5,12 @@ import PhotoUpload from './PhotoUpload';
 import RSVPTrends from './RSVPTrends';
 import StoryEditor from './StoryEditor';
 import ScheduleEditor from './ScheduleEditor';
+import GuestDetailsModal from './GuestDetailsModal';
 import { guestService } from '../services/guestService';
 import { supabase } from '../services/supabaseClient';
-import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2, TrendingUp, FileText, Calendar } from 'lucide-react';
+import { scheduleService } from '../services/scheduleService';
+import { buildGuestConfirmationEmailText } from '../utils/confirmationEmail';
+import { PieChart, Users, Building, AlertCircle, Search, X, Image, Settings, Loader2, TrendingUp, FileText, Calendar, Eye, Mail, Trash2 } from 'lucide-react';
 import { PieChart as RePieChart, Pie, Cell, Tooltip as ReTooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface AdminDashboardProps {
@@ -24,6 +27,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const [lastUpdateTime, setLastUpdateTime] = useState<Date | null>(null);
   const [isRealtimeConnected, setIsRealtimeConnected] = useState(false);
   const [updateNotification, setUpdateNotification] = useState<string | null>(null);
+  const [selectedGuest, setSelectedGuest] = useState<Guest | null>(null);
+  const [isPreparingEmail, setIsPreparingEmail] = useState(false);
+  const [isSavingGuest, setIsSavingGuest] = useState(false);
 
   // Authentication
   const handleLogin = async (e: React.FormEvent) => {
@@ -47,6 +53,62 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
       alert('Error loading guest data. Please try again.');
     } finally {
       setIsLoadingGuests(false);
+    }
+  }, []);
+
+  const handleDeleteGuest = useCallback(async (guest: Guest) => {
+    const fullName = `${guest.firstName} ${guest.lastName}`.trim();
+    const confirmDelete = window.confirm(
+      `Delete this guest?\n\n${fullName || '(no name)'}\n${guest.email || '(no email)'}\n\nThis cannot be undone.`
+    );
+    if (!confirmDelete) return;
+
+    try {
+      await guestService.deleteGuest(guest.id);
+      setGuests(prev => prev.filter(g => g.id !== guest.id));
+      setSelectedGuest(prev => (prev?.id === guest.id ? null : prev));
+    } catch (error) {
+      console.error('Error deleting guest:', error);
+      alert('Error deleting guest. Please try again.');
+    }
+  }, []);
+
+  const handleSendConfirmationEmail = useCallback(async (guest: Guest) => {
+    if (!guest.email) {
+      alert('This guest does not have an email address on file.');
+      return;
+    }
+    if (guest.rsvpStatus !== 'Attending') {
+      alert('Confirmation emails are only available for guests with status "Attending".');
+      return;
+    }
+
+    setIsPreparingEmail(true);
+    try {
+      const schedule = await scheduleService.getSchedule();
+      const { subject, body } = buildGuestConfirmationEmailText({ guest, schedule });
+      const mailto = `mailto:${guest.email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+      window.location.href = mailto;
+    } catch (error) {
+      console.error('Error preparing confirmation email:', error);
+      alert('Error preparing email. Please try again.');
+    } finally {
+      setIsPreparingEmail(false);
+    }
+  }, []);
+
+  const handleSaveGuestEdits = useCallback(async (guestId: string, updates: Partial<Guest>) => {
+    setIsSavingGuest(true);
+    try {
+      const updated = await guestService.updateGuest(guestId, updates);
+      setGuests(prev => prev.map(g => (g.id === guestId ? updated : g)));
+      setSelectedGuest(prev => (prev?.id === guestId ? updated : prev));
+    } catch (error) {
+      console.error('Error saving guest:', error);
+      alert('Error saving guest changes. Please try again.');
+      throw error;
+    } finally {
+      setIsSavingGuest(false);
     }
   }, []);
 
@@ -140,7 +202,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   // Filtered List
   const filteredGuests = guests.filter(g => 
     g.firstName.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    g.lastName.toLowerCase().includes(searchTerm.toLowerCase())
+    g.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (g.email || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -402,6 +465,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                                 <th className="px-6 py-4">Accommodation</th>
                                 <th className="px-6 py-4">Booking Method</th>
                                 <th className="px-6 py-4">Notes</th>
+                                <th className="px-6 py-4 text-right">Actions</th>
                               </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
@@ -430,14 +494,46 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                                   <td className="px-6 py-4 text-gray-600">
                                     {guest.bookingMethod ? guest.bookingMethod.replace('_', ' ') : '-'}
                                   </td>
-                                  <td className="px-6 py-4 text-gray-500 max-w-xs truncate">
+                                  <td className="px-6 py-4 text-gray-500 max-w-xs truncate" title={guest.note || ''}>
                                     {guest.note || '-'}
+                                  </td>
+                                  <td className="px-6 py-4">
+                                    <div className="flex items-center justify-end gap-2">
+                                      <button
+                                        onClick={() => setSelectedGuest(guest)}
+                                        className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600"
+                                        title="View full details"
+                                      >
+                                        <Eye className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleSendConfirmationEmail(guest)}
+                                        disabled={isPreparingEmail || !guest.email || guest.rsvpStatus !== 'Attending'}
+                                        className="p-2 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-600 disabled:opacity-40 disabled:cursor-not-allowed"
+                                        title={
+                                          !guest.email
+                                            ? 'No email on file'
+                                            : guest.rsvpStatus !== 'Attending'
+                                              ? 'Only available for Attending guests'
+                                              : 'Send confirmation email'
+                                        }
+                                      >
+                                        <Mail className="w-4 h-4" />
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteGuest(guest)}
+                                        className="p-2 rounded-lg bg-red-50 hover:bg-red-100 text-red-700"
+                                        title="Delete guest"
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               ))}
                               {filteredGuests.length === 0 && (
                                 <tr>
-                                  <td colSpan={5} className="px-6 py-8 text-center text-gray-400">No guests found matching your search.</td>
+                                  <td colSpan={6} className="px-6 py-8 text-center text-gray-400">No guests found matching your search.</td>
                                 </tr>
                               )}
                             </tbody>
@@ -586,6 +682,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
              </div>
           )}
        </div>
+
+       {selectedGuest && (
+         <GuestDetailsModal
+           guest={selectedGuest}
+           onClose={() => setSelectedGuest(null)}
+           onDelete={handleDeleteGuest}
+           onSendEmail={handleSendConfirmationEmail}
+           onSave={handleSaveGuestEdits}
+           isSaving={isSavingGuest}
+         />
+       )}
     </div>
   );
 };

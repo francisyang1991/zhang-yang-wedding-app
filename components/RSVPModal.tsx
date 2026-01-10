@@ -34,6 +34,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
   const [rsvpStayChoice, setRsvpStayChoice] = useState<string>('');
   const [rsvpRoomView, setRsvpRoomView] = useState<string>('');
   const [rsvpBedPreference, setRsvpBedPreference] = useState<string>('');
+  const [rsvpVillaType, setRsvpVillaType] = useState<string>(''); // Garden View / Ocean View
   
   const [rsvpBookingMethod, setRsvpBookingMethod] = useState<string>('');
   const [rsvpNote, setRsvpNote] = useState<string>(''); // General/Room notes
@@ -54,6 +55,7 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setRsvpStayChoice('');
     setRsvpRoomView('');
     setRsvpBedPreference('');
+    setRsvpVillaType('');
     setMealMap({});
     setDietaryMap({});
     setPhoneMap({});
@@ -77,9 +79,13 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
       );
 
       if (mainGuest) {
-        const family = allGuests.filter(g =>
-          (g.familyId && g.familyId === mainGuest.familyId) || g.id === mainGuest.id
-        );
+        const normalizedEmail = (mainGuest.email || '').trim().toLowerCase();
+        const family = allGuests.filter(g => {
+          const sameFamily = !!(g.familyId && mainGuest.familyId && g.familyId === mainGuest.familyId);
+          const sameId = g.id === mainGuest.id;
+          const sameEmail = normalizedEmail && (g.email || '').trim().toLowerCase() === normalizedEmail;
+          return sameFamily || sameId || sameEmail;
+        });
 
         // Deduplicate
         const uniqueFamily = Array.from(new Set(family.map(g => g.id)))
@@ -108,8 +114,11 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
           }
           
           initialMeals[m.id] = meal;
-          initialDietary[m.id] = m.note || ''; // Using note for dietary initially, will enhance later
-          initialPhones[m.id] = ''; // Will be populated from database in future
+          const legacyDietary = (!m.dietaryRestrictions && m.note && !m.note.includes('General:') && !m.note.includes('[+1'))
+            ? m.note
+            : '';
+          initialDietary[m.id] = m.dietaryRestrictions || legacyDietary || '';
+          initialPhones[m.id] = m.phone || '';
           initialEmails[m.id] = m.email || '';
           
           // Check for existing Plus One data
@@ -128,7 +137,15 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
         // Load Accommodation (from first guest with data)
         const existingAcc = uniqueFamily.find(m => m.accommodation);
         if (existingAcc) {
-          setRsvpStayChoice(existingAcc.accommodation || '');
+          const isVillaSelection = !!(
+            existingAcc.accommodation === 'andaz' &&
+            (
+              (existingAcc.roomDetail || '').toLowerCase().includes('villa') ||
+              (existingAcc.bookingMethod || '').toLowerCase().includes('villa')
+            )
+          );
+
+          setRsvpStayChoice(isVillaSelection ? 'andaz_villa' : (existingAcc.accommodation || ''));
           setRsvpBookingMethod(existingAcc.bookingMethod || '');
 
           // Parse Room Detail for View and Bed
@@ -139,11 +156,15 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
              const bed = details.find(d => d.includes('King') || d.includes('Queen'));
              if (view) setRsvpRoomView(view);
              if (bed) setRsvpBedPreference(bed);
+
+             const villaType = details.find(d => d.toLowerCase().includes('garden view') || d.toLowerCase().includes('ocean view'));
+             if (villaType) setRsvpVillaType(villaType);
           }
         } else {
           setRsvpStayChoice('');
           setRsvpRoomView('');
           setRsvpBedPreference('');
+          setRsvpVillaType('');
           setRsvpBookingMethod('');
         }
         setStep(2);
@@ -164,6 +185,90 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
     setErrorMessage('');
 
     try {
+      // Email-based dedup: if email already exists, treat it as "modify selection"
+      const allGuests = await guestService.getAllGuests();
+      const normalizedEmail = (newEmail || '').trim().toLowerCase();
+      const existingByEmail = normalizedEmail
+        ? allGuests.find(g => (g.email || '').trim().toLowerCase() === normalizedEmail)
+        : undefined;
+
+      if (existingByEmail) {
+        const family = allGuests.filter(g => {
+          const sameFamily = !!(g.familyId && existingByEmail.familyId && g.familyId === existingByEmail.familyId);
+          const sameId = g.id === existingByEmail.id;
+          const sameEmail = normalizedEmail && (g.email || '').trim().toLowerCase() === normalizedEmail;
+          return sameFamily || sameId || sameEmail;
+        });
+
+        const uniqueFamily = Array.from(new Set(family.map(g => g.id)))
+          .map(id => family.find(g => g.id === id)!);
+
+        setFamilyMembers(uniqueFamily);
+
+        const initialMeals: Record<string, string> = {};
+        const initialDietary: Record<string, string> = {};
+        const initialPhones: Record<string, string> = {};
+        const initialEmails: Record<string, string> = {};
+
+        const VALID_MEALS = ['Wagyu & Lobster', 'Special Dietary'];
+        uniqueFamily.forEach(m => {
+          let meal = m.mealChoice || 'Wagyu & Lobster';
+          if (!VALID_MEALS.includes(meal) && meal !== 'Kids Meal' && meal !== 'Mushroom Duxelle') {
+            meal = 'Wagyu & Lobster';
+          }
+          if (meal === 'Kids Meal' || meal === 'Mushroom Duxelle') {
+            meal = 'Special Dietary';
+          }
+
+          initialMeals[m.id] = meal;
+          const legacyDietary = (!m.dietaryRestrictions && m.note && !m.note.includes('General:') && !m.note.includes('[+1'))
+            ? m.note
+            : '';
+          initialDietary[m.id] = m.dietaryRestrictions || legacyDietary || '';
+          initialPhones[m.id] = m.phone || '';
+          initialEmails[m.id] = m.email || '';
+        });
+
+        setMealMap(initialMeals);
+        setDietaryMap(initialDietary);
+        setPhoneMap(initialPhones);
+        setEmailMap(initialEmails);
+
+        const existingAcc = uniqueFamily.find(m => m.accommodation);
+        if (existingAcc) {
+          const isVillaSelection = !!(
+            existingAcc.accommodation === 'andaz' &&
+            (
+              (existingAcc.roomDetail || '').toLowerCase().includes('villa') ||
+              (existingAcc.bookingMethod || '').toLowerCase().includes('villa')
+            )
+          );
+
+          setRsvpStayChoice(isVillaSelection ? 'andaz_villa' : (existingAcc.accommodation || ''));
+          setRsvpBookingMethod(existingAcc.bookingMethod || '');
+
+          if (existingAcc.roomDetail) {
+            const details = existingAcc.roomDetail.split('|').map(s => s.trim());
+            const view = details.find(d => d.includes('View') || d.includes('Standard'));
+            const bed = details.find(d => d.includes('King') || d.includes('Queen'));
+            if (view) setRsvpRoomView(view);
+            if (bed) setRsvpBedPreference(bed);
+
+            const villaType = details.find(d => d.toLowerCase().includes('garden view') || d.toLowerCase().includes('ocean view'));
+            if (villaType) setRsvpVillaType(villaType);
+          }
+        } else {
+          setRsvpStayChoice('');
+          setRsvpRoomView('');
+          setRsvpBedPreference('');
+          setRsvpVillaType('');
+          setRsvpBookingMethod('');
+        }
+
+        setStep(2);
+        return;
+      }
+
       // Create new guest in Supabase
       const newGuestData = {
         firstName: newFirstName,
@@ -245,9 +350,14 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
 
       // Prepare updates for Supabase
       const updates = realGuests.map(member => {
+        const isVilla = rsvpStayChoice === 'andaz_villa';
+        const computedRsvpStatus: RsvpStatus = 'Attending' as RsvpStatus;
+
         let roomDetailString = '';
         if (rsvpStayChoice === 'andaz') {
           roomDetailString = [rsvpRoomView, rsvpBedPreference].filter(Boolean).join(' | ');
+        } else if (isVilla) {
+          roomDetailString = ['Andaz Villa', rsvpVillaType].filter(Boolean).join(' | ');
         } else if (rsvpStayChoice) {
           roomDetailString = rsvpStayChoice; // Fallback for others
         }
@@ -257,12 +367,13 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
             lastName: member.lastName,
             email: emailMap[member.id] || member.email,
             familyId: member.familyId,
-            rsvpStatus: 'Attending' as RsvpStatus, // Implicitly attending
+            rsvpStatus: computedRsvpStatus,
             mealChoice: mealMap[member.id],
-            note: dietaryMap[member.id], // Saving dietary restrictions in note field
-            accommodation: rsvpStayChoice as any,
+            dietaryRestrictions: dietaryMap[member.id],
+            note: undefined,
+            accommodation: (isVilla ? 'andaz' : rsvpStayChoice) as any,
             roomDetail: roomDetailString,
-            bookingMethod: rsvpBookingMethod,
+            bookingMethod: isVilla ? 'Villa' : rsvpBookingMethod,
         };
 
         // If there is a Plus One, attach it to the FIRST real guest (usually the inviter)
@@ -449,7 +560,26 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Where are you staying?</label>
-                                    <select required value={rsvpStayChoice} onChange={(e) => setRsvpStayChoice(e.target.value)} className="w-full bg-gray-50 border border-gray-200 rounded p-3 text-sm focus:outline-none">
+                                    <select
+                                        required
+                                        value={rsvpStayChoice}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          setRsvpStayChoice(value);
+                                          // Reset dependent fields when switching options
+                                          if (value !== 'andaz') {
+                                            setRsvpRoomView('');
+                                            setRsvpBedPreference('');
+                                          }
+                                          if (value !== 'andaz_villa') {
+                                            setRsvpVillaType('');
+                                          }
+                                          if (value === 'andaz_villa') {
+                                            setRsvpBookingMethod('Villa');
+                                          }
+                                        }}
+                                        className="w-full bg-gray-50 border border-gray-200 rounded p-3 text-sm focus:outline-none"
+                                    >
                                         <option value="">Select Option...</option>
                                         <option value="andaz">Andaz Maui (Official Room Block)</option>
                                         <option value="andaz_villa">Andaz Villa ((Official Room Block))</option>
@@ -458,6 +588,27 @@ const RSVPModal: React.FC<RSVPModalProps> = ({ isOpen, onClose, guestList, onSav
                                     </select>
                                 </div>
                                 
+                                {rsvpStayChoice === 'andaz_villa' && (
+                                    <div className="animate-fade-in space-y-4 bg-wedding-sand/50 p-4 rounded-lg border border-wedding-gold/20">
+                                        <div>
+                                            <label className="block text-xs font-bold text-wedding-gold uppercase mb-1">Villa Type</label>
+                                            <select
+                                                required
+                                                value={rsvpVillaType}
+                                                onChange={(e) => setRsvpVillaType(e.target.value)}
+                                                className="w-full bg-white border border-wedding-gold/30 rounded p-2 text-sm focus:outline-none"
+                                            >
+                                                <option value="">Select Villa Type...</option>
+                                                <option value="Garden View">Garden View</option>
+                                                <option value="Ocean View">Ocean View</option>
+                                            </select>
+                                            <p className="text-[11px] text-gray-500 mt-2">
+                                              We will do our best to match your preference. Final availability depends on the resort.
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {rsvpStayChoice && rsvpStayChoice !== 'andaz_villa' && (
                                     <div className="animate-fade-in space-y-4 bg-wedding-sand/50 p-4 rounded-lg border border-wedding-gold/20">
                                         
