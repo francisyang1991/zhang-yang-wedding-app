@@ -180,7 +180,7 @@ const OurStory = () => {
              {renderPhotoGallery()}
            </div>
         </div>
-        
+
         {/* Story Text Section (Reduced to 50% and left-aligned) */}
         <div className="w-full md:w-1/2 text-left">
            <span className="text-wedding-gold font-bold text-xs uppercase tracking-widest mb-4 block">The Journey</span>
@@ -199,7 +199,7 @@ const OurStory = () => {
            ) : (
              <>
                <h2 className="font-serif text-4xl text-wedding-text mb-6">How We Met</h2>
-               <p className="text-gray-600 leading-relaxed mb-4 font-light">
+           <p className="text-gray-600 leading-relaxed mb-4 font-light">
                  It began with a steaming pot of spicy hotpot at Chengdu Memory in Seattle. Six years, countless miles, two cats, and a life built through adventure later—we're making it official.
                </p>
                <p className="text-gray-600 leading-relaxed mb-6 font-light">
@@ -250,9 +250,9 @@ const OurStory = () => {
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
+                </div>
+              </div>
+            )}
 
       {/* Lightbox for Selected Photo (within Gallery) */}
       {selectedPhoto && isGalleryOpen && (
@@ -279,7 +279,7 @@ const OurStory = () => {
                <p className="bg-black/50 inline-block px-4 py-2 rounded-full backdrop-blur-sm text-sm">
                  {selectedPhoto.caption}
                </p>
-             </div>
+          </div>
            )}
         </div>
       )}

@@ -13,12 +13,12 @@ let supabaseInstance
 
 if (isSupabaseConfigured()) {
   supabaseInstance = createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
-    auth: {
-      autoRefreshToken: true,
-      persistSession: true,
-      detectSessionInUrl: true
-    }
-  })
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+})
 } else {
   console.warn('⚠️ Supabase environment variables missing. App running in offline/demo mode.')
   
@@ -75,7 +75,7 @@ if (isSupabaseConfigured()) {
     auth: {
       getSession: () => Promise.resolve({ data: { session: null }, error: null }),
       onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } })
-    }
+}
   } as any
 }
 

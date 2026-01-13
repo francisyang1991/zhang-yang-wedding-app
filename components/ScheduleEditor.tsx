@@ -64,38 +64,38 @@ const ScheduleEditor = () => {
       {events.map((event) => (
         <div key={event.id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
           {editingId === event.id ? (
-            <div className="space-y-4">
+      <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                  <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Title</label>
-                  <input
+                    <input
                     value={editForm.title || ''}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-wedding-gold focus:outline-none"
-                  />
-                </div>
-                <div>
+                    />
+                  </div>
+                  <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Time</label>
-                  <input
+                    <input
                     value={editForm.time || ''}
                     onChange={(e) => setEditForm({ ...editForm, time: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-wedding-gold focus:outline-none"
-                  />
-                </div>
-              </div>
+                    />
+                  </div>
+                  </div>
               
               <div className="grid grid-cols-2 gap-4">
-                <div>
+                  <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Day</label>
-                  <input
+                    <input
                     value={editForm.day || ''}
                     onChange={(e) => setEditForm({ ...editForm, day: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-wedding-gold focus:outline-none"
-                  />
-                </div>
-                <div>
+                    />
+                  </div>
+                  <div>
                   <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Date</label>
-                  <input
+                    <input
                     value={editForm.date || ''}
                     onChange={(e) => setEditForm({ ...editForm, date: e.target.value })}
                     className="w-full border border-gray-300 rounded p-2 text-sm focus:border-wedding-gold focus:outline-none"
@@ -167,9 +167,9 @@ const ScheduleEditor = () => {
               >
                 <Edit2 className="w-4 h-4" />
               </button>
-            </div>
-          )}
-        </div>
+          </div>
+        )}
+      </div>
       ))}
     </div>
   );

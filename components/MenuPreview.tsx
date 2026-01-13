@@ -151,9 +151,9 @@ const MenuPreview = () => {
         </div>
 
         <div className="p-6 bg-wedding-sand border border-wedding-gold/20 rounded-2xl inline-block max-w-xl">
-            <p className="text-xs text-gray-600 font-medium leading-relaxed italic">
-              "A locally-sourced Hawaiian fusion menu curated with the Andaz executive chef to celebrate the island's flavors and our favorite memories."
-            </p>
+          <p className="text-xs text-gray-600 font-medium leading-relaxed italic">
+            "A locally-sourced Hawaiian fusion menu curated with the Andaz executive chef to celebrate the island's flavors and our favorite memories."
+          </p>
         </div>
       </div>
     </div>
