@@ -210,7 +210,7 @@ const AccommodationCard: React.FC<Props> = ({ data, pricingMode, viewMode }) => 
           ) : (
             <button className={`w-full py-3 rounded-md font-bold text-xs transition-colors uppercase tracking-widest bg-white border border-gray-300 text-gray-700 hover:bg-gray-50`}>
                 Inquire
-            </button>
+          </button>
           )}
           
           {data.virtualTourUrl && (

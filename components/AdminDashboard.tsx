@@ -182,7 +182,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   const declined = guests.filter(g => g.rsvpStatus === 'Declined').length;
   const pending = guests.filter(g => g.rsvpStatus === 'Pending').length;
 
-  const andazCount = guests.filter(g => g.accommodation === 'andaz').length;
+  // Separate Andaz Room Block vs Villa
+  const isAndazVilla = (g: Guest) => 
+    g.accommodation === 'andaz' && (
+      g.bookingMethod === 'Villa' || 
+      (g.roomDetail || '').toLowerCase().includes('villa')
+    );
+  const isAndazRoom = (g: Guest) => 
+    g.accommodation === 'andaz' && !isAndazVilla(g);
+
+  const andazRoomCount = guests.filter(isAndazRoom).length;
+  const andazVillaCount = guests.filter(isAndazVilla).length;
   const acHotelCount = guests.filter(g => g.accommodation === 'ac_hotel').length;
   const selfCount = guests.filter(g => g.accommodation === 'self').length;
 
@@ -194,9 +204,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
   ];
 
   const accommodationData = [
-    { name: 'Andaz', value: andazCount, color: '#C5A059' },    // Gold
-    { name: 'AC Hotel', value: acHotelCount, color: '#2C5282' }, // Ocean
-    { name: 'Self/Other', value: selfCount, color: '#ED8936' }, // Orange
+    { name: 'Andaz Room', value: andazRoomCount, color: '#C5A059' },    // Gold
+    { name: 'Andaz Villa', value: andazVillaCount, color: '#8B5E3C' },  // Bronze/Brown
+    { name: 'AC Hotel', value: acHotelCount, color: '#2C5282' },        // Ocean
+    { name: 'Self/Other', value: selfCount, color: '#ED8936' },        // Orange
   ];
 
   // Filtered List
@@ -376,8 +387,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onClose }) => {
                         </div>
                         <div className="bg-white p-4 rounded-xl border border-wedding-gold/30 bg-wedding-gold/5 shadow-sm flex items-center justify-between">
                           <div>
-                            <p className="text-xs font-bold text-wedding-gold uppercase">Andaz Rooms</p>
-                            <p className="text-3xl font-serif text-gray-800">{andazCount}</p>
+                            <p className="text-xs font-bold text-wedding-gold uppercase">Andaz Total</p>
+                            <p className="text-3xl font-serif text-gray-800">{andazRoomCount + andazVillaCount}</p>
+                            <p className="text-[10px] text-gray-500 mt-1">
+                              {andazRoomCount} Room · {andazVillaCount} Villa
+                            </p>
                           </div>
                           <Building className="w-8 h-8 text-wedding-gold/50" />
                         </div>
