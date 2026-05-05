@@ -69,6 +69,38 @@ export interface ScheduleEvent {
 // Phase 5: Guest Management Types
 export type RsvpStatus = 'Pending' | 'Attending' | 'Declined';
 
+// Phase 6: Planning Board Types
+export type TodoCategory =
+  | 'Ceremony'
+  | 'Photo & Video'
+  | 'Vendors & Setup'
+  | 'Attire'
+  | 'Gifts'
+  | 'Wedding Party'
+  | 'BEO / Catering'
+  | 'Travel & Lodging'
+  | 'Other';
+
+export type TodoOwner = 'Francis' | 'Yuwen' | 'Both' | 'Planner' | 'Unassigned';
+export type Identity = 'Francis' | 'Yuwen' | 'Planner';
+
+export interface Todo {
+  id: string;
+  title: string;
+  notes?: string;
+  category: TodoCategory;
+  dueDate?: string; // ISO date 'YYYY-MM-DD'
+  owner: TodoOwner;
+  inProgress: boolean;
+  done: boolean;
+  doneBy?: string;
+  doneAt?: string;
+  orderIndex: number;
+  createdBy?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export interface Guest {
   id: string;
   familyId?: string; // Links guests together
