@@ -388,20 +388,15 @@ const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, on
   const isDone = todo.progress === 100;
 
   return (
-    <div className={`rounded-2xl border-l-4 ${accent.split(' ')[0]} bg-white border border-gray-200 shadow-sm transition-all ${isDone ? 'opacity-60' : ''}`}>
-      <div className="p-4">
-        {/* Title row + chevron */}
-        <div className="flex items-start gap-3 mb-3">
-          <button onClick={onExpand} className="text-left flex-1 min-w-0">
-            <p className={`font-medium text-wedding-text ${isDone ? 'line-through' : ''}`}>{todo.title}</p>
-          </button>
-          <button onClick={onExpand} className="text-gray-300 hover:text-gray-500 shrink-0 mt-0.5">
-            {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-          </button>
-        </div>
+    <div className={`rounded-xl border-l-4 ${accent.split(' ')[0]} bg-white border border-gray-200 shadow-sm transition-all ${isDone ? 'opacity-60' : ''}`}>
+      <div className="p-3">
+        {/* Title — click to expand */}
+        <button onClick={onExpand} className="block w-full text-left mb-2">
+          <p className={`font-medium text-sm text-wedding-text ${isDone ? 'line-through' : ''}`}>{todo.title}</p>
+        </button>
 
         {/* Compact progress slider */}
-        <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+        <div className="mb-2">
           <ProgressSlider
             progress={todo.progress}
             onChange={onSetProgress}
@@ -410,21 +405,21 @@ const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, on
           />
         </div>
 
-        {/* Badges */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold ${TONE_CLASSES[due.tone]}`}>
-            <CalendarIcon className="w-2.5 h-2.5 inline mr-1 -mt-0.5" />
+        {/* Inline metadata strip */}
+        <button onClick={onExpand} className="flex flex-wrap items-center gap-1 text-[9px] w-full text-left">
+          <span className={`uppercase tracking-wider px-1.5 py-0.5 rounded-full font-bold ${TONE_CLASSES[due.tone]}`}>
+            <CalendarIcon className="w-2.5 h-2.5 inline mr-0.5 -mt-0.5" />
             {due.label}
           </span>
-          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold ${OWNER_BADGE[todo.owner]}`}>
+          <span className={`uppercase tracking-wider px-1.5 py-0.5 rounded-full font-bold ${OWNER_BADGE[todo.owner]}`}>
             {t.owners[todo.owner]}
           </span>
           {isDone && todo.doneBy && (
-            <span className="text-[10px] uppercase tracking-wider text-emerald-600">
+            <span className="uppercase tracking-wider text-emerald-600 font-bold">
               {t.doneByLabel(t.owners[todo.doneBy as TodoOwner] ?? todo.doneBy)}
             </span>
           )}
-        </div>
+        </button>
       </div>
 
       {expanded && (

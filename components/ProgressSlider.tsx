@@ -33,8 +33,8 @@ const ProgressSlider: React.FC<Props> = ({ progress, onChange, lang, compact = f
   };
 
   return (
-    <div className={compact ? 'w-full' : 'w-full'}>
-      <div className="flex items-center gap-3">
+    <div className="w-full">
+      <div className="flex items-center gap-2">
         <div className="relative flex-1 min-w-0">
           <input
             type="range"
@@ -54,9 +54,10 @@ const ProgressSlider: React.FC<Props> = ({ progress, onChange, lang, compact = f
           )}
         </div>
 
-        <div className={`shrink-0 flex items-center gap-1 text-xs font-bold ${stageColor(progress)}`}>
-          {isDone && <Check className="w-3.5 h-3.5" />}
+        <div className={`shrink-0 flex items-center gap-1 text-[11px] font-bold ${stageColor(progress)}`}>
+          {isDone && <Check className="w-3 h-3" />}
           <span className="tabular-nums">{progress}%</span>
+          <span className="text-[9px] uppercase tracking-wider opacity-70 hidden sm:inline">· {stageLabel}</span>
         </div>
       </div>
 
@@ -78,7 +79,7 @@ const ProgressSlider: React.FC<Props> = ({ progress, onChange, lang, compact = f
       )}
 
       {compact && (
-        <p className={`mt-1 text-[10px] uppercase tracking-wider font-bold ${stageColor(progress)}`}>
+        <p className={`mt-1 text-[9px] uppercase tracking-wider font-bold sm:hidden ${stageColor(progress)}`}>
           {stageLabel}
         </p>
       )}
