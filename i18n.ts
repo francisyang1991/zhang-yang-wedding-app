@@ -60,6 +60,24 @@ export interface PlanningStrings {
   progress: string;
   progressStages: { 0: string; 25: string; 50: string; 75: string; 100: string };
 
+  // Comments
+  comments: string;
+  noComments: string;
+  addComment: string;
+  send: string;
+  reply: string;
+  mentionHint: string;
+  unreadMentions: (n: number) => string;
+  justNow: string;
+  minutesAgo: (n: number) => string;
+  hoursAgo: (n: number) => string;
+  daysAgo: (n: number) => string;
+  commentsFor: (title: string) => string;
+  closeSidebar: string;
+  openSidebar: string;
+  noCommentsYet: string;
+  selectTodoToView: string;
+
   // States
   loading: string;
   nothingToShow: string;
@@ -132,6 +150,23 @@ const en: PlanningStrings = {
     100: 'Done',
   },
 
+  comments: 'Comments',
+  noComments: 'No comments yet',
+  addComment: 'Add a comment…',
+  send: 'Send',
+  reply: 'Reply',
+  mentionHint: 'Tip: type @ to mention someone',
+  unreadMentions: (n) => `${n} unread`,
+  justNow: 'just now',
+  minutesAgo: (n) => `${n}m ago`,
+  hoursAgo: (n) => `${n}h ago`,
+  daysAgo: (n) => `${n}d ago`,
+  commentsFor: (title) => `Comments · ${title}`,
+  closeSidebar: 'Close',
+  openSidebar: 'Comments',
+  noCommentsYet: 'No comments yet — start the conversation.',
+  selectTodoToView: 'Pick a todo on the left to see its comments.',
+
   categories: {
     'Ceremony':         'Ceremony',
     'Photo & Video':    'Photo & Video',
@@ -148,7 +183,7 @@ const en: PlanningStrings = {
     Francis:    'Francis',
     Yuwen:      'Yuwen',
     Both:       'Both',
-    Planner:    'Planner',
+    Planner:    'Manna',
     Unassigned: 'Unassigned',
   },
 };
@@ -215,6 +250,23 @@ const zh: PlanningStrings = {
     100: '已完成',
   },
 
+  comments: '评论',
+  noComments: '还没有评论',
+  addComment: '写一条评论…',
+  send: '发送',
+  reply: '回复',
+  mentionHint: '提示：输入 @ 提及某人',
+  unreadMentions: (n) => `${n} 条未读`,
+  justNow: '刚刚',
+  minutesAgo: (n) => `${n} 分钟前`,
+  hoursAgo: (n) => `${n} 小时前`,
+  daysAgo: (n) => `${n} 天前`,
+  commentsFor: (title) => `评论 · ${title}`,
+  closeSidebar: '收起',
+  openSidebar: '评论',
+  noCommentsYet: '还没有评论 — 来开个头吧。',
+  selectTodoToView: '点击左侧某条事项查看其评论。',
+
   categories: {
     'Ceremony':         '仪式',
     'Photo & Video':    '摄影摄像',
@@ -231,7 +283,7 @@ const zh: PlanningStrings = {
     Francis:    'Francis',
     Yuwen:      'Yuwen',
     Both:       '两人',
-    Planner:    '策划',
+    Planner:    'Manna',
     Unassigned: '未分配',
   },
 };

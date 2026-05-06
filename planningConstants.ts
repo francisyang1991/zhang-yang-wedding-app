@@ -11,6 +11,23 @@ export const WEDDING_DATE_LABEL = 'June 12, 2026';
 
 export const IDENTITIES: Identity[] = ['Francis', 'Yuwen', 'Planner'];
 
+// Display name used in UI labels and @mention syntax.
+// Identity 'Planner' renders + parses as 'Manna' (her real name).
+export const IDENTITY_DISPLAY: Record<Identity, string> = {
+  Francis: 'Francis',
+  Yuwen:   'Yuwen',
+  Planner: 'Manna',
+};
+
+// Reverse lookup: display name → Identity. Used when parsing @mentions.
+export const DISPLAY_TO_IDENTITY: Record<string, Identity> = {
+  Francis: 'Francis',
+  Yuwen:   'Yuwen',
+  Manna:   'Planner',
+};
+
+export const MENTION_NAMES = ['Francis', 'Yuwen', 'Manna'] as const;
+
 export const TODO_CATEGORIES: TodoCategory[] = [
   'Ceremony',
   'Photo & Video',

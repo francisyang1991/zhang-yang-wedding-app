@@ -102,6 +102,16 @@ export interface Todo {
   updatedAt?: string;
 }
 
+export interface Comment {
+  id: string;
+  todoId: string;
+  author: string;     // display name: 'Francis' / 'Yuwen' / 'Manna'
+  body: string;
+  mentions: string[]; // display names that were @mentioned
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface Guest {
   id: string;
   familyId?: string; // Links guests together

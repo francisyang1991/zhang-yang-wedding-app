@@ -1,15 +1,19 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
   Plus, Check, Trash2, Calendar as CalendarIcon, AlertCircle, ChevronDown, ChevronRight,
-  Users, RefreshCw, Filter, X
+  Users, RefreshCw, Filter, X, MessageCircle, Bell
 } from 'lucide-react';
-import { Todo, TodoCategory, TodoOwner, Identity } from '../types';
+import { Todo, TodoCategory, TodoOwner, Identity, Comment } from '../types';
 import { todoService } from '../services/todoService';
-import { TODO_CATEGORIES, TODO_OWNERS, CATEGORY_ACCENT } from '../planningConstants';
+import { commentService } from '../services/commentService';
+import { TODO_CATEGORIES, TODO_OWNERS, CATEGORY_ACCENT, IDENTITY_DISPLAY } from '../planningConstants';
 import { Lang, dict, PlanningStrings } from '../i18n';
 import CountdownBanner from './CountdownBanner';
 import LangToggle from './LangToggle';
 import ProgressSlider from './ProgressSlider';
+import CommentSidebar from './CommentSidebar';
+
+const LAST_SEEN_KEY = 'wedding_planning_lastSeenComments';
 
 interface Props {
   identity: Identity;
@@ -59,8 +63,10 @@ const OWNER_BADGE: Record<TodoOwner, string> = {
 
 const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLangChange }) => {
   const t = dict[lang];
+  const myDisplay = IDENTITY_DISPLAY[identity];
 
   const [todos, setTodos]       = useState<Todo[]>([]);
+  const [comments, setComments] = useState<Comment[]>([]);
   const [loading, setLoading]   = useState(true);
   const [error, setError]       = useState<string | null>(null);
   const [expandedId, setExpanded] = useState<string | null>(null);
@@ -78,11 +84,22 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
   const [newOwner, setNewOwner]       = useState<TodoOwner>('Both');
   const [newDueDate, setNewDueDate]   = useState('');
 
+  // Comment sidebar state
+  const [sidebarOpen, setSidebarOpen]     = useState(false);
+  const [focusedTodoId, setFocusedTodoId] = useState<string | null>(null);
+  const [lastSeenAt, setLastSeenAt]       = useState<string>(() =>
+    localStorage.getItem(`${LAST_SEEN_KEY}_${myDisplay}`) ?? new Date(0).toISOString()
+  );
+
   const reload = useCallback(async () => {
     try {
       setError(null);
-      const data = await todoService.getAll();
-      setTodos(data);
+      const [todoData, commentData] = await Promise.all([
+        todoService.getAll(),
+        commentService.getAll(),
+      ]);
+      setTodos(todoData);
+      setComments(commentData);
     } catch (e: any) {
       setError(e?.message ?? 'Failed to load todos');
     } finally {
@@ -92,9 +109,34 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
 
   useEffect(() => {
     reload();
-    const unsubscribe = todoService.subscribe(() => reload());
-    return unsubscribe;
+    const unsubTodos = todoService.subscribe(() => reload());
+    const unsubComments = commentService.subscribe(() => reload());
+    return () => { unsubTodos(); unsubComments(); };
   }, [reload]);
+
+  // Mark unread @mentions as seen when sidebar opens (or on desktop where it's always visible)
+  const markSeen = useCallback(() => {
+    const now = new Date().toISOString();
+    setLastSeenAt(now);
+    localStorage.setItem(`${LAST_SEEN_KEY}_${myDisplay}`, now);
+  }, [myDisplay]);
+
+  // ---- Comment handlers --------------------------------------------------
+
+  const handleAddComment = async (todoId: string, body: string) => {
+    try {
+      await commentService.create({ todoId, author: myDisplay, body });
+    } catch (e: any) {
+      alert(e?.message ?? 'Failed to add comment');
+      throw e;
+    }
+  };
+
+  const handleOpenComments = (todoId: string) => {
+    setFocusedTodoId(todoId);
+    setSidebarOpen(true);
+    markSeen();
+  };
 
   // ---- Mutations (with optimistic UI) -------------------------------------
 
@@ -179,6 +221,25 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
     return { total: todos.length, done, open: open.length, overdue, avgProgress };
   }, [todos]);
 
+  // Comments by todo + unread @-mentions for current identity
+  const commentsByTodo = useMemo(() => {
+    const m = new Map<string, Comment[]>();
+    for (const c of comments) {
+      const arr = m.get(c.todoId) ?? [];
+      arr.push(c);
+      m.set(c.todoId, arr);
+    }
+    return m;
+  }, [comments]);
+
+  const unreadMentionCount = useMemo(() => {
+    return comments.filter((c) =>
+      c.mentions.includes(myDisplay) &&
+      c.author !== myDisplay &&
+      c.createdAt > lastSeenAt
+    ).length;
+  }, [comments, myDisplay, lastSeenAt]);
+
   const toggleCategory = (cat: TodoCategory) => {
     setCollapsedCategories((prev) => {
       const next = new Set(prev);
@@ -194,11 +255,25 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-wedding-sand to-white pb-32">
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
+    <div className="min-h-screen bg-gradient-to-b from-wedding-sand to-white">
+      <div className="flex min-h-screen">
+        <div className="flex-1 min-w-0 pb-32">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 py-8">
 
-        {/* ------------------- TOP BAR (lang toggle) ------------------- */}
-        <div className="flex justify-end mb-4">
+        {/* ------------------- TOP BAR (lang toggle + bell) ------------------- */}
+        <div className="flex justify-end items-center gap-2 mb-4">
+          <button
+            onClick={() => { setSidebarOpen(true); markSeen(); }}
+            className="relative inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/90 border border-gray-200 shadow-sm hover:border-wedding-gold transition-colors text-xs font-bold md:hidden"
+            aria-label={t.openSidebar}
+          >
+            <Bell className="w-3.5 h-3.5 text-wedding-gold" />
+            {unreadMentionCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-bold rounded-full w-4 h-4 flex items-center justify-center">
+                {unreadMentionCount > 9 ? '9+' : unreadMentionCount}
+              </span>
+            )}
+          </button>
           <LangToggle lang={lang} onChange={onLangChange} />
         </div>
 
@@ -334,7 +409,13 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
                         t={t}
                         lang={lang}
                         expanded={expandedId === todo.id}
+                        commentCount={(commentsByTodo.get(todo.id) ?? []).length}
+                        hasUnread={(commentsByTodo.get(todo.id) ?? []).some((c) =>
+                          c.mentions.includes(myDisplay) && c.author !== myDisplay && c.createdAt > lastSeenAt
+                        )}
+                        isFocused={focusedTodoId === todo.id}
                         onExpand={() => setExpanded(expandedId === todo.id ? null : todo.id)}
+                        onOpenComments={() => handleOpenComments(todo.id)}
                         onSetProgress={(p) => handleSetProgress(todo, p)}
                         onEdit={(patch) => handleEdit(todo.id, patch)}
                         onDelete={() => handleDelete(todo.id)}
@@ -346,6 +427,26 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
             );
           })}
         </div>
+          </div>
+        </div>
+
+        {/* ------------------- COMMENT SIDEBAR ------------------- */}
+        <CommentSidebar
+          todos={todos}
+          comments={comments}
+          identity={myDisplay}
+          lang={lang}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+          focusedTodoId={focusedTodoId}
+          onSelectTodo={(id) => {
+            setFocusedTodoId(id);
+            setExpanded(id);
+            const el = document.getElementById(`todo-${id}`);
+            el?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          }}
+          onSubmit={handleAddComment}
+        />
       </div>
 
       {/* ------------------- IDENTITY SWITCHER (FAB) ------------------- */}
@@ -376,19 +477,31 @@ interface TodoRowProps {
   t: PlanningStrings;
   lang: Lang;
   expanded: boolean;
+  commentCount: number;
+  hasUnread: boolean;
+  isFocused: boolean;
   onExpand: () => void;
+  onOpenComments: () => void;
   onSetProgress: (progress: number) => void;
   onEdit: (patch: Partial<Todo>) => void;
   onDelete: () => void;
 }
 
-const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, onSetProgress, onEdit, onDelete }) => {
+const TodoRow: React.FC<TodoRowProps> = ({
+  todo, t, lang, expanded, commentCount, hasUnread, isFocused,
+  onExpand, onOpenComments, onSetProgress, onEdit, onDelete,
+}) => {
   const due = fmtRelative(todo.dueDate, t, lang);
   const accent = CATEGORY_ACCENT[todo.category];
   const isDone = todo.progress === 100;
 
   return (
-    <div className={`rounded-xl border-l-4 ${accent.split(' ')[0]} bg-white border border-gray-200 shadow-sm transition-all ${isDone ? 'opacity-60' : ''}`}>
+    <div
+      id={`todo-${todo.id}`}
+      className={`rounded-xl border-l-4 ${accent.split(' ')[0]} bg-white border shadow-sm transition-all ${isDone ? 'opacity-60' : ''} ${
+        isFocused ? 'border-wedding-gold ring-2 ring-wedding-gold/20' : 'border-gray-200'
+      }`}
+    >
       <div className="p-3">
         {/* Title — click to expand */}
         <button onClick={onExpand} className="block w-full text-left mb-2">
@@ -406,20 +519,33 @@ const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, on
         </div>
 
         {/* Inline metadata strip */}
-        <button onClick={onExpand} className="flex flex-wrap items-center gap-1 text-[9px] w-full text-left">
-          <span className={`uppercase tracking-wider px-1.5 py-0.5 rounded-full font-bold ${TONE_CLASSES[due.tone]}`}>
+        <div className="flex flex-wrap items-center gap-1 text-[9px]">
+          <button onClick={onExpand} className={`uppercase tracking-wider px-1.5 py-0.5 rounded-full font-bold ${TONE_CLASSES[due.tone]}`}>
             <CalendarIcon className="w-2.5 h-2.5 inline mr-0.5 -mt-0.5" />
             {due.label}
-          </span>
-          <span className={`uppercase tracking-wider px-1.5 py-0.5 rounded-full font-bold ${OWNER_BADGE[todo.owner]}`}>
+          </button>
+          <button onClick={onExpand} className={`uppercase tracking-wider px-1.5 py-0.5 rounded-full font-bold ${OWNER_BADGE[todo.owner]}`}>
             {t.owners[todo.owner]}
-          </span>
+          </button>
           {isDone && todo.doneBy && (
             <span className="uppercase tracking-wider text-emerald-600 font-bold">
               {t.doneByLabel(t.owners[todo.doneBy as TodoOwner] ?? todo.doneBy)}
             </span>
           )}
-        </button>
+          <button
+            onClick={onOpenComments}
+            className={`relative ml-auto inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full font-bold uppercase tracking-wider transition-colors ${
+              commentCount > 0 ? 'bg-wedding-gold/15 text-wedding-gold hover:bg-wedding-gold/25' : 'text-gray-400 hover:text-wedding-gold'
+            }`}
+            aria-label={t.comments}
+          >
+            <MessageCircle className="w-3 h-3" />
+            {commentCount > 0 && <span>{commentCount}</span>}
+            {hasUnread && (
+              <span className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-red-500 rounded-full" />
+            )}
+          </button>
+        </div>
       </div>
 
       {expanded && (
