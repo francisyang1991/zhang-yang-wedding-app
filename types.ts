@@ -91,8 +91,9 @@ export interface Todo {
   category: TodoCategory;
   dueDate?: string; // ISO date 'YYYY-MM-DD'
   owner: TodoOwner;
-  inProgress: boolean;
-  done: boolean;
+  progress: number; // 0-100, snaps to 0/25/50/75/100
+  inProgress: boolean; // derived from progress; kept in DB for back-compat
+  done: boolean;       // derived from progress (=100); kept in DB for back-compat
   doneBy?: string;
   doneAt?: string;
   orderIndex: number;

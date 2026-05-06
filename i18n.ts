@@ -57,6 +57,8 @@ export interface PlanningStrings {
   doneByLabel: (name: string) => string;
   notesPlaceholder: string;
   titlePlaceholder: string;
+  progress: string;
+  progressStages: { 0: string; 25: string; 50: string; 75: string; 100: string };
 
   // States
   loading: string;
@@ -120,6 +122,15 @@ const en: PlanningStrings = {
   loading: 'Loading…',
   nothingToShow: 'Nothing to show with these filters.',
   retry: 'Retry',
+
+  progress: 'Progress',
+  progressStages: {
+    0:   'Not Started',
+    25:  'Started',
+    50:  'In Progress',
+    75:  'Almost Done',
+    100: 'Done',
+  },
 
   categories: {
     'Ceremony':         'Ceremony',
@@ -194,6 +205,15 @@ const zh: PlanningStrings = {
   loading: '加载中…',
   nothingToShow: '当前筛选条件下没有内容。',
   retry: '重试',
+
+  progress: '进度',
+  progressStages: {
+    0:   '未开始',
+    25:  '已开始',
+    50:  '进行中',
+    75:  '接近完成',
+    100: '已完成',
+  },
 
   categories: {
     'Ceremony':         '仪式',

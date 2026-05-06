@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import {
-  Plus, Check, Trash2, Calendar as CalendarIcon, AlertCircle, Clock, ChevronDown, ChevronRight,
+  Plus, Check, Trash2, Calendar as CalendarIcon, AlertCircle, ChevronDown, ChevronRight,
   Users, RefreshCw, Filter, X
 } from 'lucide-react';
 import { Todo, TodoCategory, TodoOwner, Identity } from '../types';
@@ -9,6 +9,7 @@ import { TODO_CATEGORIES, TODO_OWNERS, CATEGORY_ACCENT } from '../planningConsta
 import { Lang, dict, PlanningStrings } from '../i18n';
 import CountdownBanner from './CountdownBanner';
 import LangToggle from './LangToggle';
+import ProgressSlider from './ProgressSlider';
 
 interface Props {
   identity: Identity;
@@ -97,23 +98,22 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
 
   // ---- Mutations (with optimistic UI) -------------------------------------
 
-  const handleToggleDone = async (todo: Todo) => {
-    const next = !todo.done;
+  const handleSetProgress = async (todo: Todo, progress: number) => {
+    const isDone = progress === 100;
+    const isStarted = progress > 0 && progress < 100;
     setTodos((prev) => prev.map((tt) => tt.id === todo.id ? {
-      ...tt, done: next, doneBy: next ? identity : undefined, doneAt: next ? new Date().toISOString() : undefined,
-      inProgress: next ? false : tt.inProgress,
+      ...tt,
+      progress,
+      done: isDone,
+      inProgress: isStarted,
+      doneBy: isDone ? identity : undefined,
+      doneAt: isDone ? new Date().toISOString() : undefined,
     } : tt));
     try {
-      await todoService.toggleDone(todo.id, next, identity);
-    } catch (e) { reload(); }
-  };
-
-  const handleToggleInProgress = async (todo: Todo) => {
-    const next = !todo.inProgress;
-    setTodos((prev) => prev.map((tt) => tt.id === todo.id ? { ...tt, inProgress: next } : tt));
-    try {
-      await todoService.update(todo.id, { inProgress: next });
-    } catch (e) { reload(); }
+      await todoService.setProgress(todo.id, progress, identity);
+    } catch (e) {
+      reload();
+    }
   };
 
   const handleEdit = async (id: string, patch: Partial<Todo>) => {
@@ -155,8 +155,9 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
 
   const filtered = useMemo(() => {
     return todos.filter((tt) => {
-      if (statusFilter === 'open' && tt.done) return false;
-      if (statusFilter === 'done' && !tt.done) return false;
+      const isDone = tt.progress === 100;
+      if (statusFilter === 'open' && isDone) return false;
+      if (statusFilter === 'done' && !isDone) return false;
       if (categoryFilter !== 'all' && tt.category !== categoryFilter) return false;
       if (ownerFilter !== 'all' && tt.owner !== ownerFilter) return false;
       return true;
@@ -171,9 +172,11 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
   }, [filtered]);
 
   const stats = useMemo(() => {
-    const open = todos.filter((tt) => !tt.done);
+    const done = todos.filter((tt) => tt.progress === 100).length;
+    const open = todos.filter((tt) => tt.progress < 100);
     const overdue = open.filter((tt) => tt.dueDate && new Date(tt.dueDate + 'T00:00:00') < today()).length;
-    return { total: todos.length, done: todos.filter((tt) => tt.done).length, open: open.length, overdue };
+    const avgProgress = todos.length === 0 ? 0 : Math.round(todos.reduce((sum, tt) => sum + tt.progress, 0) / todos.length);
+    return { total: todos.length, done, open: open.length, overdue, avgProgress };
   }, [todos]);
 
   const toggleCategory = (cat: TodoCategory) => {
@@ -205,10 +208,11 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
         </div>
 
         {/* ------------------- STATS ------------------- */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-4 gap-3 mb-6">
           <StatCard label={t.statOpen}    value={stats.open}    tone="text-wedding-gold" />
           <StatCard label={t.statOverdue} value={stats.overdue} tone={stats.overdue > 0 ? 'text-red-500' : 'text-gray-400'} />
           <StatCard label={t.statDone}    value={`${stats.done}/${stats.total}`} tone="text-emerald-600" />
+          <StatCard label={t.progress}    value={`${stats.avgProgress}%`}      tone="text-wedding-text" />
         </div>
 
         {/* ------------------- FILTER BAR ------------------- */}
@@ -331,8 +335,7 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
                         lang={lang}
                         expanded={expandedId === todo.id}
                         onExpand={() => setExpanded(expandedId === todo.id ? null : todo.id)}
-                        onToggleDone={() => handleToggleDone(todo)}
-                        onToggleInProgress={() => handleToggleInProgress(todo)}
+                        onSetProgress={(p) => handleSetProgress(todo, p)}
                         onEdit={(patch) => handleEdit(todo.id, patch)}
                         onDelete={() => handleDelete(todo.id)}
                       />
@@ -361,7 +364,7 @@ const PlanningBoard: React.FC<Props> = ({ identity, onSwitchIdentity, lang, onLa
 
 const StatCard: React.FC<{ label: string; value: number | string; tone: string }> = ({ label, value, tone }) => (
   <div className="bg-white rounded-2xl border border-gray-200 p-4 text-center shadow-sm">
-    <div className={`font-serif text-3xl font-bold ${tone}`}>{value}</div>
+    <div className={`font-serif text-2xl md:text-3xl font-bold ${tone}`}>{value}</div>
     <div className="text-[10px] uppercase tracking-widest text-gray-400 mt-1">{label}</div>
   </div>
 );
@@ -374,68 +377,75 @@ interface TodoRowProps {
   lang: Lang;
   expanded: boolean;
   onExpand: () => void;
-  onToggleDone: () => void;
-  onToggleInProgress: () => void;
+  onSetProgress: (progress: number) => void;
   onEdit: (patch: Partial<Todo>) => void;
   onDelete: () => void;
 }
 
-const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, onToggleDone, onToggleInProgress, onEdit, onDelete }) => {
+const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, onSetProgress, onEdit, onDelete }) => {
   const due = fmtRelative(todo.dueDate, t, lang);
   const accent = CATEGORY_ACCENT[todo.category];
+  const isDone = todo.progress === 100;
 
   return (
-    <div className={`rounded-2xl border-l-4 ${accent.split(' ')[0]} bg-white border border-gray-200 shadow-sm transition-all ${todo.done ? 'opacity-60' : ''}`}>
-      <div className="flex items-start gap-3 p-4">
-        <button
-          onClick={onToggleDone}
-          aria-label={todo.done ? 'Toggle' : 'Toggle'}
-          className={`mt-0.5 w-6 h-6 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
-            todo.done ? 'bg-emerald-500 border-emerald-500 text-white' : 'border-gray-300 hover:border-wedding-gold'
-          }`}
-        >
-          {todo.done && <Check className="w-4 h-4" />}
-        </button>
-
-        <div className="flex-1 min-w-0">
-          <button onClick={onExpand} className="text-left w-full">
-            <p className={`font-medium text-wedding-text ${todo.done ? 'line-through' : ''}`}>{todo.title}</p>
+    <div className={`rounded-2xl border-l-4 ${accent.split(' ')[0]} bg-white border border-gray-200 shadow-sm transition-all ${isDone ? 'opacity-60' : ''}`}>
+      <div className="p-4">
+        {/* Title row + chevron */}
+        <div className="flex items-start gap-3 mb-3">
+          <button onClick={onExpand} className="text-left flex-1 min-w-0">
+            <p className={`font-medium text-wedding-text ${isDone ? 'line-through' : ''}`}>{todo.title}</p>
           </button>
-
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold ${TONE_CLASSES[due.tone]}`}>
-              <CalendarIcon className="w-2.5 h-2.5 inline mr-1 -mt-0.5" />
-              {due.label}
-            </span>
-            <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold ${OWNER_BADGE[todo.owner]}`}>
-              {t.owners[todo.owner]}
-            </span>
-            {todo.inProgress && !todo.done && (
-              <span className="text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold bg-yellow-100 text-yellow-700">
-                <Clock className="w-2.5 h-2.5 inline mr-1 -mt-0.5" /> {t.inProgress}
-              </span>
-            )}
-            {todo.done && todo.doneBy && (
-              <span className="text-[10px] uppercase tracking-wider text-emerald-600">
-                {t.doneByLabel(t.owners[todo.doneBy as TodoOwner] ?? todo.doneBy)}
-              </span>
-            )}
-          </div>
+          <button onClick={onExpand} className="text-gray-300 hover:text-gray-500 shrink-0 mt-0.5">
+            {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+          </button>
         </div>
 
-        <button onClick={onExpand} className="text-gray-300 hover:text-gray-500 shrink-0">
-          {expanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-        </button>
+        {/* Compact progress slider */}
+        <div className="mb-3" onClick={(e) => e.stopPropagation()}>
+          <ProgressSlider
+            progress={todo.progress}
+            onChange={onSetProgress}
+            lang={lang}
+            compact
+          />
+        </div>
+
+        {/* Badges */}
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold ${TONE_CLASSES[due.tone]}`}>
+            <CalendarIcon className="w-2.5 h-2.5 inline mr-1 -mt-0.5" />
+            {due.label}
+          </span>
+          <span className={`text-[10px] uppercase tracking-wider px-2 py-0.5 rounded-full font-bold ${OWNER_BADGE[todo.owner]}`}>
+            {t.owners[todo.owner]}
+          </span>
+          {isDone && todo.doneBy && (
+            <span className="text-[10px] uppercase tracking-wider text-emerald-600">
+              {t.doneByLabel(t.owners[todo.doneBy as TodoOwner] ?? todo.doneBy)}
+            </span>
+          )}
+        </div>
       </div>
 
       {expanded && (
-        <div className="border-t border-gray-100 p-4 space-y-3 bg-gray-50/50 rounded-b-2xl">
+        <div className="border-t border-gray-100 p-4 space-y-4 bg-gray-50/50 rounded-b-2xl">
           <input
             value={todo.title}
             onChange={(e) => onEdit({ title: e.target.value })}
             className="w-full text-sm bg-white border border-gray-200 rounded-lg px-3 py-2"
             placeholder={t.titlePlaceholder}
           />
+
+          {/* Full progress slider with stage labels */}
+          <div className="bg-white p-3 rounded-lg border border-gray-200">
+            <p className="text-[10px] uppercase tracking-widest font-bold text-gray-500 mb-2">{t.progress}</p>
+            <ProgressSlider
+              progress={todo.progress}
+              onChange={onSetProgress}
+              lang={lang}
+            />
+          </div>
+
           <div className="grid grid-cols-2 gap-2">
             <select value={todo.category} onChange={(e) => onEdit({ category: e.target.value as TodoCategory })} className="text-xs px-2 py-2 rounded-lg border border-gray-200 bg-white">
               {TODO_CATEGORIES.map((c) => <option key={c} value={c}>{t.categories[c]}</option>)}
@@ -457,16 +467,7 @@ const TodoRow: React.FC<TodoRowProps> = ({ todo, t, lang, expanded, onExpand, on
             rows={3}
             className="w-full text-sm bg-white border border-gray-200 rounded-lg px-3 py-2"
           />
-          <div className="flex justify-between items-center">
-            <button
-              onClick={onToggleInProgress}
-              className={`text-xs font-bold uppercase tracking-wider px-3 py-1.5 rounded-full ${
-                todo.inProgress ? 'bg-yellow-100 text-yellow-700' : 'bg-gray-100 text-gray-500'
-              }`}
-            >
-              <Clock className="w-3 h-3 inline mr-1" />
-              {todo.inProgress ? t.inProgress : t.markInProgress}
-            </button>
+          <div className="flex justify-end">
             <button onClick={onDelete} className="text-xs text-red-400 hover:text-red-600 flex items-center gap-1">
               <Trash2 className="w-3 h-3" /> {t.delete}
             </button>

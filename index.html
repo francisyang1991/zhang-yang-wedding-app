@@ -39,6 +39,53 @@
         margin: 1.5rem auto;
         opacity: 0.4;
       }
+
+      /* Progress slider — used in PlanningBoard TodoRow */
+      .progress-range {
+        -webkit-appearance: none;
+        appearance: none;
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(to right, #C5A059 var(--p, 0%), #E5E7EB var(--p, 0%));
+        outline: none;
+        cursor: pointer;
+        transition: background 0.15s;
+      }
+      .progress-range.done {
+        background: linear-gradient(to right, #10b981 var(--p, 100%), #E5E7EB var(--p, 100%));
+      }
+      .progress-range::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: white;
+        border: 2px solid #C5A059;
+        cursor: grab;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        transition: transform 0.1s;
+      }
+      .progress-range.done::-webkit-slider-thumb {
+        border-color: #10b981;
+      }
+      .progress-range::-webkit-slider-thumb:active { cursor: grabbing; transform: scale(1.15); }
+      .progress-range::-moz-range-thumb {
+        width: 18px; height: 18px; border-radius: 50%;
+        background: white; border: 2px solid #C5A059;
+        cursor: grab; box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+      }
+      .progress-range.done::-moz-range-thumb { border-color: #10b981; }
+      /* Tick marks below the bar */
+      .progress-ticks {
+        display: grid;
+        grid-template-columns: repeat(5, 1fr);
+        margin-top: 4px;
+      }
+      .progress-ticks > span {
+        width: 1px; height: 4px; background: #D1D5DB; justify-self: start;
+      }
+      .progress-ticks > span:last-child { justify-self: end; }
     </style>
   <script type="importmap">
 {

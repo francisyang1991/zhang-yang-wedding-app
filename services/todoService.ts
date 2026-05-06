@@ -8,6 +8,7 @@ type TodoRow = {
   category: TodoCategory;
   due_date: string | null;
   owner: TodoOwner;
+  progress: number;
   in_progress: boolean;
   done: boolean;
   done_by: string | null;
@@ -25,6 +26,7 @@ const rowToTodo = (row: TodoRow): Todo => ({
   category: row.category,
   dueDate: row.due_date ?? undefined,
   owner: row.owner,
+  progress: row.progress ?? 0,
   inProgress: row.in_progress,
   done: row.done,
   doneBy: row.done_by ?? undefined,
@@ -34,6 +36,11 @@ const rowToTodo = (row: TodoRow): Todo => ({
   createdAt: row.created_at,
   updatedAt: row.updated_at,
 });
+
+const snap = (n: number): number => {
+  const clamped = Math.max(0, Math.min(100, n));
+  return Math.round(clamped / 25) * 25;
+};
 
 export const todoService = {
   async getAll(): Promise<Todo[]> {
@@ -66,7 +73,7 @@ export const todoService = {
         due_date: input.dueDate ?? null,
         notes: input.notes ?? null,
         created_by: input.createdBy,
-        order_index: Date.now() % 1_000_000, // late-arrivers sort to the bottom
+        order_index: Date.now() % 1_000_000,
       })
       .select()
       .single();
@@ -85,6 +92,7 @@ export const todoService = {
     if (patch.category !== undefined)    updates.category = patch.category;
     if (patch.dueDate !== undefined)     updates.due_date = patch.dueDate || null;
     if (patch.owner !== undefined)       updates.owner = patch.owner;
+    if (patch.progress !== undefined)    updates.progress = snap(patch.progress);
     if (patch.inProgress !== undefined)  updates.in_progress = patch.inProgress;
     if (patch.done !== undefined)        updates.done = patch.done;
     if (patch.doneBy !== undefined)      updates.done_by = patch.doneBy || null;
@@ -98,12 +106,21 @@ export const todoService = {
     }
   },
 
-  async toggleDone(id: string, done: boolean, identity: string): Promise<void> {
+  /**
+   * Set progress (snapped to 0/25/50/75/100) and sync the legacy
+   * `done` / `in_progress` / `done_by` / `done_at` columns so any other
+   * code reading those still sees consistent state.
+   */
+  async setProgress(id: string, rawProgress: number, identity: string): Promise<void> {
+    const progress = snap(rawProgress);
+    const isDone = progress === 100;
+    const isStarted = progress > 0 && progress < 100;
     await this.update(id, {
-      done,
-      doneBy: done ? identity : undefined,
-      doneAt: done ? new Date().toISOString() : undefined,
-      inProgress: done ? false : undefined,
+      progress,
+      done: isDone,
+      inProgress: isStarted,
+      doneBy: isDone ? identity : '',
+      doneAt: isDone ? new Date().toISOString() : '',
     });
   },
 
