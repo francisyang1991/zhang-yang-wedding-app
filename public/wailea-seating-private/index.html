@@ -1716,11 +1716,12 @@
         }
       }
 
+      const seatNum = ((seatIdx - table.pos1 + table.seats.length) % table.seats.length) + 1;
       const editor = document.createElement('div');
       editor.className = 'seat-editor';
       editor.id = 'seat-editor';
       editor.innerHTML = `
-        <h4>编辑 — ${escapeHtml(table.shortLabel)} · 座 ${seatIdx + 1}</h4>
+        <h4>编辑 — ${escapeHtml(table.shortLabel)} · 座 ${seatNum}</h4>
         <label>姓名</label>
         <input type="text" id="ed-name" value="${escapeHtml(guest.name)}" />
         <label>备注（可选）</label>
