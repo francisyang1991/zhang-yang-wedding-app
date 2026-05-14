@@ -685,7 +685,7 @@
     //   U-shape: T1–T3 left, T6–T8 right, T4–T5 bottom, Sweetheart top.
     // =============================================================
 
-    const STORAGE_KEY = 'xy-wedding-seating-v5';
+    const STORAGE_KEY = 'xy-wedding-seating-v6';
     const FLOOR_W = 1400, FLOOR_H = 900;
     const DEFAULT_POS1 = 0;
 
@@ -734,55 +734,61 @@
       {
         id: 'sweet', shortLabel: 'B & G', name: 'Sweetheart', theme: '新人桌',
         shape: 'sweetheart', x: 590, y: 14,
-        guests: [
+        seats: [
           { name: 'Wendy Sun', entree: 'Duo Entrée', note: 'Bride' },
           { name: 'Francis Yang', entree: 'Vegetarian', note: 'Groom' },
         ],
+        originalOrder: ['Wendy Sun','Francis Yang'],
       },
       {
         id: 'T1', shortLabel: 'T1', name: 'Table 1', theme: '家人桌',
-        shape: 'vertical', x: 80, y: 110, pos1: DEFAULT_POS1,
-        guests: [
+        shape: 'vertical', x: 80, y: 110, pos1: 0,
+        seats: [
           { name: 'Francis 爸' },
           { name: 'Francis 妈' },
-          { name: 'Wendy 爸' },
           { name: 'Wendy 妈' },
-          { name: 'Junhuan Sun', note: 'Wendy 哥哥',   coupleId: 't1-a' },
-          { name: 'Zeli Zhang',  note: "Junhuan's GF", coupleId: 't1-a' },
+          { name: 'Zeli Zhang',  note: "Junhuan's GF",          coupleId: 't1-a' },
           { name: 'Kaiyi Zhang', note: '原 T2' },
           { name: 'Cai Song',    note: '原 T8 · 邻接 T2 Mengda' },
+          { name: 'Junhuan Sun', note: 'Wendy 哥哥',             coupleId: 't1-a' },
+          { name: 'Wendy 爸' },
         ],
+        originalOrder: ['Francis 爸','Francis 妈','Wendy 爸','Wendy 妈','Junhuan Sun','Zeli Zhang','Kaiyi Zhang','Cai Song'],
       },
       {
         id: 'T2', shortLabel: 'T2', name: 'Table 2', theme: '猫猫狗狗',
-        shape: 'vertical', x: 80, y: 320, pos1: DEFAULT_POS1,
-        guests: [
-          { name: 'Mengda Liu',   note: '邻接 T1 Cai Song', coupleId: 't2-a' },
-          { name: 'Siqi Fan',                                coupleId: 't2-a' },
-          { name: 'Yuqing Wang',                             coupleId: 't2-b' },
-          { name: 'Yijie Zhuang',                            coupleId: 't2-b' },
-          { name: 'Xueer Lu',     note: 'couple · 原 T1' },
+        shape: 'vertical', x: 80, y: 320, pos1: 0,
+        seats: [
+          { name: 'Mengda Liu',   note: '邻接 T1 Cai Song',     coupleId: 't2-a' },
+          { name: 'Yuqing Wang',                                 coupleId: 't2-b' },
+          { name: 'Yijie Zhuang',                                coupleId: 't2-b' },
+          { name: 'Yue Li',       note: 'NYC mix-in · 原 T5' },
+          { name: 'Rui Xia',      note: 'NYC · 原 T8' },
           { name: 'Xiaodan Chen', note: 'Canada · 原 T1' },
+          { name: 'Xueer Lu',     note: 'couple · 原 T1' },
+          { name: 'Siqi Fan',                                    coupleId: 't2-a' },
         ],
+        originalOrder: ['Mengda Liu','Siqi Fan','Yuqing Wang','Yijie Zhuang','Xueer Lu','Xiaodan Chen'],
       },
       {
         id: 'T3', shortLabel: 'T3', name: 'Table 3', theme: '音乐节 / 火人节',
-        shape: 'vertical', x: 80, y: 530, pos1: DEFAULT_POS1,
-        guests: [
-          { name: 'Allison',                                coupleId: 't3-a' },
-          { name: 'Arnold Luk',                             coupleId: 't3-a' },
-          { name: 'Ivy Mo' },
-          { name: 'Shatang Wang' },
+        shape: 'vertical', x: 80, y: 530, pos1: 0,
+        seats: [
           { name: 'Ziwei Li' },
-          { name: 'Chenrui Zhou', note: 'NYC' },
-          { name: 'Mike Jiang',   note: '原 T4 · 换 Jiayu' },
-          { name: 'Xu Sun',       note: 'single · 原 T7' },
+          { name: 'Xu Sun',     note: 'single · 原 T7 美食' },
+          { name: 'Mike Jiang', note: '原 T4 · 与 Jiayu 互换' },
+          { name: 'Arnold Luk',                          coupleId: 't3-a' },
+          null,
+          { name: 'Ivy Mo' },
+          { name: 'Allison',                             coupleId: 't3-a' },
+          { name: 'Shatang Wang' },
         ],
+        originalOrder: ['Allison','Arnold Luk','Ivy Mo','Shatang Wang','Ziwei Li','Chenrui Zhou','Mike Jiang','Xu Sun'],
       },
       {
         id: 'T4', shortLabel: 'T4', name: 'Table 4', theme: '电影 / 胶片 / 摄影',
-        shape: 'horizontal', x: 420, y: 750, pos1: DEFAULT_POS1,
-        guests: [
+        shape: 'horizontal', x: 420, y: 750, pos1: 0,
+        seats: [
           { name: 'Yate Ji',        coupleId: 't4-a' },
           { name: 'Xinglin Wang',   coupleId: 't4-a' },
           { name: 'Jiongsheng Cai', coupleId: 't4-b' },
@@ -792,62 +798,67 @@
           { name: 'Yifei Bao',      coupleId: 't4-d' },
           { name: 'Yang Yang',      coupleId: 't4-d' },
         ],
+        originalOrder: ['Yate Ji','Xinglin Wang','Jiongsheng Cai','Yurui Yang','Yichen Zhang','Zhihong Luo','Yifei Bao','Yang Yang'],
       },
       {
         id: 'T5', shortLabel: 'T5', name: 'Table 5', theme: "Wendy 朋友圈",
-        shape: 'horizontal', x: 710, y: 750, pos1: DEFAULT_POS1,
-        guests: [
-          { name: 'Jiayu Zhang',  note: '原 T2 · 邻 T4 电影组' },
-          { name: 'Yichi Zhang',  note: 'couple · 原 T2' },
+        shape: 'horizontal', x: 710, y: 750, pos1: 0,
+        seats: [
+          { name: 'Jiayu Zhang',  note: '原 T2 · 邻接 T4 电影组' },
+          { name: 'Yichi Zhang',  note: 'couple · 原 T2 · Wendy 朋友' },
           { name: 'Kehan Bao' },
-          { name: 'Rui Xia',      note: 'NYC · 原 T8' },
-          { name: 'Jingxi Huang', note: '高中',     coupleId: 't5-a' },
-          { name: 'Zebang Li',                       coupleId: 't5-a' },
-          { name: 'Qi Leng',      note: '高中',     coupleId: 't5-b' },
-          { name: 'Kyle',                            coupleId: 't5-b' },
+          null,
+          { name: 'Jingxi Huang', note: '高中', coupleId: 't5-a' },
+          { name: 'Zebang Li',                   coupleId: 't5-a' },
+          { name: 'Qi Leng',      note: '高中', coupleId: 't5-b' },
+          { name: 'Kyle',                        coupleId: 't5-b' },
         ],
+        originalOrder: ['Jiayu Zhang','Yichi Zhang','Kehan Bao','Rui Xia','Jingxi Huang','Zebang Li','Qi Leng','Kyle'],
       },
       {
         id: 'T6', shortLabel: 'T6', name: 'Table 6', theme: '户外 / 滑雪',
-        shape: 'vertical', x: 1160, y: 530, pos1: DEFAULT_POS1,
-        guests: [
-          { name: 'Jingyi Lin',  note: 'Jamie' },
-          { name: 'Ting Zhang',  note: '邻接 Jamie',  coupleId: 't6-a' },
-          { name: 'Jiechao He',  note: '原 T5',      coupleId: 't6-a' },
+        shape: 'vertical', x: 1160, y: 530, pos1: 0,
+        seats: [
+          { name: 'Donnie',                                       coupleId: 't8-c' },
+          { name: 'Jiechao He',  note: '原 T5',                   coupleId: 't6-a' },
+          { name: 'Ting Zhang',  note: '邻接 Jingyi',              coupleId: 't6-a' },
+          { name: 'Jingyi (Jamie) Lin' },
           { name: 'Sundi' },
-          { name: 'Jiashan Song' },
           { name: 'Yichu Wang' },
-          { name: 'Meshen',                           coupleId: 't6-b' },
-          { name: 'Erica',                            coupleId: 't6-b' },
+          { name: 'Jiashan Song' },
+          { name: 'Chenrui Zhou', note: 'NYC' },
         ],
+        originalOrder: ['Jingyi (Jamie) Lin','Ting Zhang','Jiechao He','Sundi','Jiashan Song','Yichu Wang','Meshen','Erica'],
       },
       {
         id: 'T7', shortLabel: 'T7', name: 'Table 7', theme: '美食',
-        shape: 'vertical', x: 1160, y: 320, pos1: DEFAULT_POS1,
-        guests: [
-          { name: 'Zhixian Chen',                           coupleId: 't7-a' },
-          { name: 'Xinyue Geng',                            coupleId: 't7-a' },
+        shape: 'vertical', x: 1160, y: 320, pos1: 0,
+        seats: [
           { name: 'Tianliang Lin', note: 'single 美食' },
-          { name: 'Egan Zhang',    note: '原 T8 · 同桌 Zhenbang' },
+          { name: 'Xinyue Geng',                            coupleId: 't7-a' },
+          { name: 'Jiayi Liu',                              coupleId: 't7-b' },
           { name: 'Zhenbang Chen', note: '同桌 Egan',       coupleId: 't7-b' },
-          { name: 'Jiayi Liu',                               coupleId: 't7-b' },
-          { name: 'Yannie Lee',                              coupleId: 't7-c' },
-          { name: 'Yichao Zhao',                             coupleId: 't7-c' },
+          { name: 'Egan Zhang',    note: '原 T8 · 同桌 Zhenbang' },
+          { name: 'Mengni Zhang',                           coupleId: 't8-c' },
+          { name: 'Yannie Lee',                             coupleId: 't7-c' },
+          { name: 'Yichao Zhao',                            coupleId: 't7-c' },
         ],
+        originalOrder: ['Zhixian Chen','Xinyue Geng','Tianliang Lin','Egan Zhang','Zhenbang Chen','Jiayi Liu','Yannie Lee','Yichao Zhao'],
       },
       {
         id: 'T8', shortLabel: 'T8', name: 'Table 8', theme: '红酒 / 初代夏威夷',
-        shape: 'vertical', x: 1160, y: 110, pos1: DEFAULT_POS1,
-        guests: [
+        shape: 'vertical', x: 1160, y: 110, pos1: 0,
+        seats: [
+          { name: 'Yawei Zhang',                              coupleId: 't8-b' },
+          { name: 'Zhangchi Yao', note: '和 Yueyi 挨着',       coupleId: 't8-a' },
+          { name: 'Yueyi Ma',     note: '和 Zhangchi 挨着',    coupleId: 't8-a' },
           { name: 'Xikai Chen' },
-          { name: 'Yueyi Ma',     note: '挨 Zhangchi', coupleId: 't8-a' },
-          { name: 'Zhangchi Yao', note: '挨 Yueyi',    coupleId: 't8-a' },
-          { name: 'Yawei Zhang',                       coupleId: 't8-b' },
-          { name: 'Xiaoke Chen',                       coupleId: 't8-b' },
-          { name: 'Mengni Zhang',                      coupleId: 't8-c' },
-          { name: 'Donnie',                            coupleId: 't8-c' },
-          { name: 'Yue Li',       note: 'NYC · 原 T5' },
+          { name: 'Zhixian Chen',                             coupleId: 't7-a' },
+          { name: 'Meshen',                                   coupleId: 't6-b' },
+          { name: 'Erica',                                    coupleId: 't6-b' },
+          { name: 'Xiaoke Chen',                              coupleId: 't8-b' },
         ],
+        originalOrder: ['Xikai Chen','Yueyi Ma','Zhangchi Yao','Yawei Zhang','Xiaoke Chen','Mengni Zhang','Donnie','Yue Li'],
       },
     ];
 
@@ -862,10 +873,17 @@
       return INITIAL_DATA.map(t => {
         const isSweet = t.shape === 'sweetheart';
         const seatCount = isSweet ? 2 : 8;
-        const seats = new Array(seatCount).fill(null);
         const pos1 = isSweet ? 0 : (t.pos1 ?? DEFAULT_POS1);
-        for (let i = 0; i < t.guests.length && i < seatCount; i++) {
-          seats[(pos1 + i) % seatCount] = { ...t.guests[i] };
+        let seats;
+        if (t.seats) {
+          // Pre-positioned seats (nulls preserved)
+          seats = t.seats.map(g => g ? { ...g } : null);
+        } else {
+          // Build clockwise from pos1 using guests array
+          seats = new Array(seatCount).fill(null);
+          for (let i = 0; i < (t.guests?.length || 0) && i < seatCount; i++) {
+            seats[(pos1 + i) % seatCount] = { ...t.guests[i] };
+          }
         }
         return {
           id: t.id,
@@ -877,7 +895,7 @@
           y: t.y,
           pos1,
           seats,
-          originalOrder: t.guests.map(g => g.name),
+          originalOrder: t.originalOrder ?? (t.guests ? t.guests.map(g => g.name) : []),
         };
       });
     }
