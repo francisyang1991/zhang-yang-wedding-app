@@ -126,7 +126,9 @@
       transition: background 0.2s;
       font-variant-numeric: tabular-nums;
     }
-    .saved-indicator.flash { background: rgba(120, 180, 100, 0.4); color: #4a6d2e; }
+    .saved-indicator.flash    { background: rgba(120, 180, 100, 0.4); color: #4a6d2e; }
+    .saved-indicator.remote   { background: rgba(110, 160, 210, 0.35); color: #2c4a6d; }
+    .saved-indicator.offline  { background: rgba(220, 140, 100, 0.3);  color: #8a3a1a; }
 
     .toolbar .hint {
       margin-left: auto;
@@ -579,6 +581,7 @@
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
   </style>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 </head>
 <body>
   <header>
@@ -609,9 +612,9 @@
       <button class="btn" id="btn-import">导入 JSON</button>
       <button class="btn danger" id="btn-reset">重置全部</button>
     </div>
-    <span class="saved-indicator" id="saved-indicator">💾 自动保存于浏览器</span>
+    <span class="saved-indicator" id="saved-indicator">⏳ 连接中…</span>
     <div class="hint">
-      💡 拖动桌体移动 · 拖动名牌互换 · 悬停桌子用 ◀ ↻ ▶ 调整 1 号位
+      💡 拖动桌体移动 · 拖动名牌互换 · 悬停桌子用 ◀ ↻ ▶ 调整 1 号位 · 所有改动实时同步给协作者
     </div>
   </div>
 
@@ -688,6 +691,19 @@
     const STORAGE_KEY = 'xy-wedding-seating-v6';
     const FLOOR_W = 1400, FLOOR_H = 900;
     const DEFAULT_POS1 = 0;
+
+    // --- Realtime sync (Supabase) ----------------------------------
+    const SUPABASE_URL = 'https://mdcibmfqgkwtswipajky.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1kY2libWZxZ2t3dHN3aXBhamt5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjczODIwMTUsImV4cCI6MjA4Mjk1ODAxNX0.NpOXgrKWPmsa_u0P84PJRtCTvM8VwUK7ZGVnsLv6IRc';
+    const PASSWORD_HASH = '9dc0984c1370336641db89a67c4536a2efbad5edc99e82db79db223cc85d24cd'; // sha256('maui2026')
+    const SESSION_KEY = 'xy-seating-unlocked-v1';
+    const CLIENT_ID = (crypto.randomUUID?.() || Math.random().toString(36).slice(2));
+    const SUPA_DEBOUNCE_MS = 400;
+
+    let supa = null;             // Supabase client (null until unlocked + script loaded)
+    let suspendSave = false;     // When applying remote state, don't echo back a save
+    let queuedRemoteUpdate = null; // Hold remote update until user finishes drag
+    let supaSaveTimer = null;
 
     // --- Seat positions per shape (relative to table container) -----
     // Horizontal — container 270x140, body 200x28 at (35,56)
@@ -915,10 +931,127 @@
     }
 
     function saveState() {
+      if (suspendSave) return;
       try {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
         flashSavedIndicator();
       } catch (e) { console.warn('saveState failed', e); }
+      // Debounced Supabase upsert
+      if (supa) {
+        clearTimeout(supaSaveTimer);
+        supaSaveTimer = setTimeout(saveToSupabase, SUPA_DEBOUNCE_MS);
+      }
+    }
+
+    // -------------------------------------------------------------
+    // Password gate
+    // -------------------------------------------------------------
+
+    async function sha256(text) {
+      const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(text));
+      return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+    }
+
+    async function gateAccess() {
+      if (sessionStorage.getItem(SESSION_KEY) === '1') return true;
+      for (let i = 0; i < 3; i++) {
+        const pw = prompt(i === 0
+          ? '请输入访问密码（Manna & Francis 知道）：'
+          : `密码错误，还有 ${3 - i} 次机会：`);
+        if (pw === null) return false;
+        if (await sha256(pw) === PASSWORD_HASH) {
+          sessionStorage.setItem(SESSION_KEY, '1');
+          return true;
+        }
+      }
+      return false;
+    }
+
+    function showLockedScreen() {
+      document.body.innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:center;height:100vh;
+                    flex-direction:column;gap:16px;font-family:inherit;color:#6f604c;background:#f5efe2;">
+          <div style="font-size:48px;">🔒</div>
+          <div style="font-size:16px;">访问被拒绝 / Access denied</div>
+          <a href="javascript:sessionStorage.removeItem('${SESSION_KEY}');location.reload()"
+             style="font-size:12px;color:#b88654;">重试 / Retry</a>
+        </div>`;
+    }
+
+    // -------------------------------------------------------------
+    // Supabase realtime sync
+    // -------------------------------------------------------------
+
+    async function loadFromSupabase() {
+      if (!supa) return null;
+      try {
+        const { data, error } = await supa
+          .from('seating_state')
+          .select('state, updated_at, updated_by')
+          .eq('id', 'main')
+          .maybeSingle();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        console.warn('loadFromSupabase failed', e);
+        return null;
+      }
+    }
+
+    async function saveToSupabase() {
+      if (!supa) return;
+      try {
+        const { error } = await supa
+          .from('seating_state')
+          .upsert({ id: 'main', state, updated_by: CLIENT_ID });
+        if (error) throw error;
+        setSyncStatus('synced');
+      } catch (e) {
+        console.warn('saveToSupabase failed', e);
+        setSyncStatus('offline');
+      }
+    }
+
+    function subscribeRealtime() {
+      if (!supa) return;
+      supa.channel('seating-room')
+        .on('postgres_changes',
+          { event: '*', schema: 'public', table: 'seating_state', filter: 'id=eq.main' },
+          (payload) => {
+            const row = payload.new;
+            if (!row || !row.state) return;
+            if (row.updated_by === CLIENT_ID) return; // echo of our own save
+            applyRemoteState(row.state);
+          })
+        .subscribe();
+    }
+
+    function applyRemoteState(newState) {
+      // If user is mid-drag, defer to avoid jumping their UI
+      if (tableDrag) {
+        queuedRemoteUpdate = newState;
+        return;
+      }
+      state = newState;
+      suspendSave = true;
+      render();
+      suspendSave = false;
+      setSyncStatus('remote');
+    }
+
+    function setSyncStatus(kind) {
+      const el = document.getElementById('saved-indicator');
+      if (!el) return;
+      const t = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      const time = `${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+      el.classList.remove('flash', 'remote', 'offline');
+      if (kind === 'synced')      { el.textContent = `🌐 已同步 ${time}`; el.classList.add('flash'); }
+      else if (kind === 'remote') { el.textContent = `🔁 收到协作更新 ${time}`; el.classList.add('remote'); }
+      else if (kind === 'offline'){ el.textContent = `⚠️ 同步失败，已本地保存`; el.classList.add('offline'); }
+      else                        { el.textContent = `💾 ${time}`; }
+      clearTimeout(setSyncStatus._t);
+      setSyncStatus._t = setTimeout(() => el.classList.remove('flash', 'remote'), 1200);
     }
 
     function flashSavedIndicator() {
@@ -1246,6 +1379,12 @@
       try { tableDrag.shape.releasePointerCapture(e.pointerId); } catch {}
       tableDrag = null;
       saveState();
+      // Apply any remote update that arrived while we were dragging
+      if (queuedRemoteUpdate) {
+        const q = queuedRemoteUpdate;
+        queuedRemoteUpdate = null;
+        applyRemoteState(q);
+      }
     });
 
     // -------------------------------------------------------------
@@ -1461,16 +1600,56 @@
     }
 
     // -------------------------------------------------------------
-    // Init
+    // Init — password gate → Supabase load → render → realtime subscribe
     // -------------------------------------------------------------
 
-    state = loadState();
-    render();
-    autoFit();
-    window.addEventListener('resize', () => {
-      // Don't auto-rescale on resize — user may have set a zoom manually.
-      // Just keep current scale.
-    });
+    async function init() {
+      // 1. Gate
+      const unlocked = await gateAccess();
+      if (!unlocked) {
+        showLockedScreen();
+        return;
+      }
+
+      // 2. Render local state immediately so the UI is responsive
+      state = loadState();
+      suspendSave = true;
+      render();
+      suspendSave = false;
+      autoFit();
+
+      // 3. Try Supabase client (CDN might be blocked → fall back to local-only)
+      if (window.supabase?.createClient) {
+        try {
+          supa = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            realtime: { params: { eventsPerSecond: 5 } },
+          });
+        } catch (e) {
+          console.warn('Supabase init failed, going offline', e);
+          supa = null;
+        }
+      }
+
+      if (!supa) {
+        setSyncStatus('offline');
+        return;
+      }
+
+      // 4. Pull canonical state from server (remote wins over local fallback)
+      const remote = await loadFromSupabase();
+      if (remote?.state) {
+        applyRemoteState(remote.state);
+        setSyncStatus('synced');
+      } else {
+        // Empty server → seed with our local default so collaborators share baseline
+        await saveToSupabase();
+      }
+
+      // 5. Listen for live updates from other devices
+      subscribeRealtime();
+    }
+
+    init();
   </script>
 </body>
 </html>
