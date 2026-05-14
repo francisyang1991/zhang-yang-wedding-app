@@ -580,6 +580,88 @@
       box-shadow: 0 6px 16px rgba(0,0,0,0.25);
     }
     .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* Seat editor popup */
+    .seat-editor {
+      position: fixed;
+      background: var(--panel);
+      border: 1px solid var(--accent);
+      border-radius: 8px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(60, 40, 20, 0.25);
+      z-index: 250;
+      width: 230px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+    .seat-editor h4 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      padding-bottom: 6px;
+      border-bottom: 1px solid var(--line-soft);
+      margin-bottom: 2px;
+    }
+    .seat-editor label {
+      font-size: 10px;
+      color: var(--ink-mute);
+      font-weight: 500;
+      letter-spacing: 0.3px;
+    }
+    .seat-editor input[type="text"] {
+      width: 100%;
+      padding: 6px 8px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 12px;
+      font-family: inherit;
+      color: var(--ink);
+    }
+    .seat-editor input:focus { outline: none; border-color: var(--accent); }
+    .seat-editor .pair-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff0f4;
+      padding: 6px 8px;
+      border-radius: 4px;
+      color: var(--couple);
+      font-weight: 500;
+      font-size: 11px;
+    }
+    .seat-editor .actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 4px;
+    }
+    .seat-editor .actions .btn { flex: 1; }
+    body.pairing-mode { cursor: crosshair; }
+    body.pairing-mode .seat:not(.empty) {
+      border-color: var(--couple) !important;
+      box-shadow: 0 0 0 2px rgba(201, 95, 122, 0.3) !important;
+      cursor: crosshair;
+    }
+    body.pairing-mode .seat.pair-source {
+      background: #ffe0e8 !important;
+      box-shadow: 0 0 0 3px var(--couple) !important;
+    }
+    .pairing-banner {
+      position: fixed;
+      top: 110px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--couple);
+      color: white;
+      padding: 8px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      box-shadow: 0 4px 12px rgba(201, 95, 122, 0.4);
+      z-index: 260;
+      display: none;
+    }
+    body.pairing-mode .pairing-banner { display: block; }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js"></script>
 </head>
@@ -614,7 +696,7 @@
     </div>
     <span class="saved-indicator" id="saved-indicator">⏳ 连接中…</span>
     <div class="hint">
-      💡 拖动桌体移动 · 拖动名牌互换 · 悬停桌子用 ◀ ↻ ▶ 调整 1 号位 · 所有改动实时同步给协作者
+      💡 拖动桌体移动 · 拖动名牌互换 · <b>双击名牌</b>编辑姓名/备注/情侣 · 悬停桌子用 ◀ ↻ ▶ 调 1 号位 · 实时同步
     </div>
   </div>
 
@@ -680,6 +762,7 @@
   </div>
 
   <div class="toast" id="toast"></div>
+  <div class="pairing-banner" id="pairing-banner">♥ 请点击要配对的座位（任意桌）· Esc 取消</div>
 
   <script>
     // =============================================================
@@ -1584,6 +1667,208 @@
 
     document.getElementById('modal-cancel').addEventListener('click', () => {
       modal.classList.remove('show');
+    });
+
+    // -------------------------------------------------------------
+    // Seat editor — double-click a seat to edit name / note / couple
+    // -------------------------------------------------------------
+
+    let editingSeat = null;   // { tableId, seatIdx } while editor is open
+    let pairingFrom = null;   // { tableId, seatIdx } while picking a pair partner
+
+    function openEditor(tableId, seatIdx) {
+      closeEditor();
+      const table = state.find(t => t.id === tableId);
+      if (!table) return;
+      const guest = table.seats[seatIdx];
+      if (!guest) return;
+      editingSeat = { tableId, seatIdx };
+
+      // Find existing couple partner (if any)
+      let partner = null;
+      if (guest.coupleId) {
+        outer: for (const t of state) {
+          for (let i = 0; i < t.seats.length; i++) {
+            const s = t.seats[i];
+            if (s && s.coupleId === guest.coupleId && !(t.id === tableId && i === seatIdx)) {
+              partner = { tableId: t.id, seatIdx: i, name: s.name, tableLabel: t.shortLabel };
+              break outer;
+            }
+          }
+        }
+      }
+
+      const editor = document.createElement('div');
+      editor.className = 'seat-editor';
+      editor.id = 'seat-editor';
+      editor.innerHTML = `
+        <h4>编辑 — ${escapeHtml(table.shortLabel)} · 座 ${seatIdx + 1}</h4>
+        <label>姓名</label>
+        <input type="text" id="ed-name" value="${escapeHtml(guest.name)}" />
+        <label>备注（可选）</label>
+        <input type="text" id="ed-note" value="${escapeHtml(guest.note || '')}" placeholder="如：couple · 高中" />
+        <label>情侣 / 同伴</label>
+        ${partner
+          ? `<div class="pair-row">
+               <span>♥</span>
+               <span style="flex:1;">${escapeHtml(partner.tableLabel)} · ${escapeHtml(partner.name)}</span>
+               <button class="btn" id="ed-unpair" style="padding:3px 8px;font-size:10px;">解除</button>
+             </div>
+             <button class="btn" id="ed-repair" style="font-size:11px;">🔗 改配其他人…</button>`
+          : `<button class="btn" id="ed-pair">🔗 选另一座位配对…</button>`
+        }
+        <div class="actions">
+          <button class="btn" id="ed-cancel">取消</button>
+          <button class="btn primary" id="ed-save">保存</button>
+        </div>
+      `;
+
+      // Position next to the seat in screen coords
+      const seatEl = document.querySelector(`.seat[data-table-id="${tableId}"][data-seat-idx="${seatIdx}"]`);
+      if (seatEl) {
+        const rect = seatEl.getBoundingClientRect();
+        let left = rect.right + 12;
+        let top = rect.top - 20;
+        const w = 250, h = 320;
+        if (left + w > window.innerWidth) left = rect.left - w - 12;
+        if (left < 8) left = 8;
+        if (top + h > window.innerHeight) top = window.innerHeight - h - 8;
+        if (top < 8) top = 8;
+        editor.style.left = left + 'px';
+        editor.style.top  = top  + 'px';
+      } else {
+        editor.style.left = '50%';
+        editor.style.top  = '50%';
+        editor.style.transform = 'translate(-50%, -50%)';
+      }
+      document.body.appendChild(editor);
+
+      const nameInput = document.getElementById('ed-name');
+      nameInput.focus();
+      nameInput.select();
+
+      document.getElementById('ed-save').onclick = () => { saveEditor(); render(); };
+      document.getElementById('ed-cancel').onclick = closeEditor;
+      const pairBtn = document.getElementById('ed-pair') || document.getElementById('ed-repair');
+      if (pairBtn) {
+        pairBtn.onclick = () => {
+          saveEditor({ silent: true });
+          startPairing(tableId, seatIdx);
+        };
+      }
+      const unpairBtn = document.getElementById('ed-unpair');
+      if (unpairBtn) {
+        unpairBtn.onclick = () => {
+          saveEditor({ silent: true });
+          removeCoupleId(guest.coupleId);
+          render();
+          openEditor(tableId, seatIdx);
+        };
+      }
+      // Enter saves; Esc cancels
+      editor.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveEditor(); render(); }
+      });
+    }
+
+    function saveEditor(opts = {}) {
+      if (!editingSeat) return;
+      const nameEl = document.getElementById('ed-name');
+      const noteEl = document.getElementById('ed-note');
+      if (!nameEl || !noteEl) return;
+      const name = nameEl.value.trim();
+      const note = noteEl.value.trim();
+      const table = state.find(t => t.id === editingSeat.tableId);
+      const guest = table?.seats[editingSeat.seatIdx];
+      if (!guest) return;
+      if (name) guest.name = name;
+      if (note) guest.note = note;
+      else delete guest.note;
+      if (!opts.silent) closeEditor();
+    }
+
+    function closeEditor() {
+      document.getElementById('seat-editor')?.remove();
+      editingSeat = null;
+    }
+
+    function startPairing(tableId, seatIdx) {
+      closeEditor();
+      pairingFrom = { tableId, seatIdx };
+      document.body.classList.add('pairing-mode');
+      const seatEl = document.querySelector(`.seat[data-table-id="${tableId}"][data-seat-idx="${seatIdx}"]`);
+      seatEl?.classList.add('pair-source');
+    }
+
+    function cancelPairing() {
+      pairingFrom = null;
+      document.body.classList.remove('pairing-mode');
+      document.querySelectorAll('.seat.pair-source').forEach(s => s.classList.remove('pair-source'));
+    }
+
+    function completePairing(tableId, seatIdx) {
+      if (!pairingFrom) return;
+      if (pairingFrom.tableId === tableId && pairingFrom.seatIdx === seatIdx) {
+        cancelPairing();
+        return;
+      }
+      const tA = state.find(t => t.id === pairingFrom.tableId);
+      const gA = tA?.seats[pairingFrom.seatIdx];
+      const tB = state.find(t => t.id === tableId);
+      const gB = tB?.seats[seatIdx];
+      if (!gA || !gB) { cancelPairing(); return; }
+      if (gA.coupleId) removeCoupleId(gA.coupleId);
+      if (gB.coupleId) removeCoupleId(gB.coupleId);
+      const newId = 'c-' + Math.random().toString(36).slice(2, 8);
+      gA.coupleId = newId;
+      gB.coupleId = newId;
+      cancelPairing();
+      render();
+      toast(`已配对：${gA.name} ♥ ${gB.name}`);
+    }
+
+    function removeCoupleId(coupleId) {
+      if (!coupleId) return;
+      for (const t of state) {
+        for (const s of t.seats) {
+          if (s && s.coupleId === coupleId) delete s.coupleId;
+        }
+      }
+    }
+
+    // Double-click any non-empty seat → open editor
+    floorInner.addEventListener('dblclick', (e) => {
+      const seat = e.target.closest('.seat');
+      if (!seat || seat.classList.contains('empty')) return;
+      e.preventDefault();
+      openEditor(seat.dataset.tableId, parseInt(seat.dataset.seatIdx, 10));
+    });
+
+    // In pairing mode, single click on a seat completes the pair
+    // Run in capture phase so it fires before drag-and-drop logic.
+    floorInner.addEventListener('click', (e) => {
+      if (!pairingFrom) return;
+      const seat = e.target.closest('.seat');
+      if (!seat || seat.classList.contains('empty')) return;
+      e.preventDefault();
+      e.stopPropagation();
+      completePairing(seat.dataset.tableId, parseInt(seat.dataset.seatIdx, 10));
+    }, true);
+
+    // Click outside the editor closes it (but not during pairing)
+    document.addEventListener('mousedown', (e) => {
+      if (!editingSeat || pairingFrom) return;
+      if (e.target.closest('#seat-editor')) return;
+      if (e.target.closest('.seat')) return; // double-click on another seat handles itself
+      saveEditor();
+      render();
+    });
+
+    // Esc cancels editor / pairing
+    document.addEventListener('keydown', (e) => {
+      if (e.key !== 'Escape') return;
+      if (pairingFrom) cancelPairing();
+      else if (editingSeat) closeEditor();
     });
 
     // -------------------------------------------------------------
