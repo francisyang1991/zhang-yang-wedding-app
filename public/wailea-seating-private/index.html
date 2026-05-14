@@ -1,0 +1,1458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow, noarchive" />
+  <meta name="referrer" content="no-referrer" />
+  <title>座位安排 · Private</title>
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #f5efe2;
+      --panel: #ffffff;
+      --line: #d9cdb1;
+      --line-soft: #ece2c8;
+      --ink: #2c2620;
+      --ink-soft: #6f604c;
+      --ink-mute: #9c8c70;
+      --accent: #b88654;
+      --accent-soft: #e3c89e;
+      --accent-bg: #fff5e0;
+      --highlight: #c25a4a;
+      --couple: #c95f7a;
+      --floor: #fbf6ea;
+      --shadow: 0 4px 14px rgba(120, 90, 50, 0.12);
+    }
+
+    html, body {
+      height: 100%;
+      font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB",
+                   "Microsoft YaHei", "Helvetica Neue", Helvetica, Arial, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      overflow: hidden;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    header {
+      flex-shrink: 0;
+      padding: 10px 20px;
+      background: var(--panel);
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+    header h1 {
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--ink);
+      letter-spacing: 0.5px;
+    }
+    header h1 .sub {
+      font-size: 11px;
+      color: var(--ink-mute);
+      margin-left: 8px;
+      font-weight: 400;
+    }
+
+    .toolbar {
+      flex-shrink: 0;
+      padding: 6px 20px;
+      background: #fbf6ea;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .toolbar .group {
+      display: flex;
+      gap: 6px;
+      padding-right: 10px;
+      margin-right: 2px;
+      border-right: 1px solid var(--line-soft);
+    }
+    .toolbar .group:last-of-type { border-right: 0; }
+
+    .btn {
+      padding: 5px 10px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--ink-soft);
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 11.5px;
+      font-family: inherit;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+    .btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+    .btn.primary:hover { background: #a07344; border-color: #a07344; }
+    .btn.danger:hover { background: var(--highlight); border-color: var(--highlight); }
+
+    .search {
+      padding: 5px 9px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 11.5px;
+      width: 160px;
+      font-family: inherit;
+      color: var(--ink);
+    }
+    .search:focus { outline: none; border-color: var(--accent); }
+
+    .zoom-select {
+      padding: 5px 8px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      font-size: 11.5px;
+      font-family: inherit;
+      color: var(--ink-soft);
+      cursor: pointer;
+    }
+
+    .saved-indicator {
+      font-size: 11px;
+      color: var(--ink-mute);
+      padding: 4px 8px;
+      background: rgba(180, 200, 130, 0.15);
+      border-radius: 3px;
+      transition: background 0.2s;
+      font-variant-numeric: tabular-nums;
+    }
+    .saved-indicator.flash { background: rgba(120, 180, 100, 0.4); color: #4a6d2e; }
+
+    .toolbar .hint {
+      margin-left: auto;
+      font-size: 10.5px;
+      color: var(--ink-mute);
+      line-height: 1.4;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      min-height: 0;
+    }
+
+    .floor {
+      flex: 1;
+      position: relative;
+      overflow: auto;
+      background:
+        linear-gradient(rgba(212, 180, 130, 0.05) 1px, transparent 1px) 0 0 / 40px 40px,
+        linear-gradient(90deg, rgba(212, 180, 130, 0.05) 1px, transparent 1px) 0 0 / 40px 40px,
+        var(--floor);
+    }
+
+    .floor-sizer {
+      position: relative;
+    }
+
+    .floor-inner {
+      position: relative;
+      width: 1400px;
+      height: 900px;
+      transform-origin: top left;
+      transition: transform 0.15s;
+    }
+
+    /* Venue decorations */
+    .dance-floor {
+      position: absolute;
+      left: 250px;
+      top: 110px;
+      width: 900px;
+      height: 630px;
+      background:
+        repeating-linear-gradient(45deg,
+          rgba(212, 180, 130, 0.08) 0 14px,
+          rgba(212, 180, 130, 0.03) 14px 28px);
+      border: 1px dashed rgba(180, 134, 84, 0.4);
+      border-radius: 6px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--ink-mute);
+      font-size: 12px;
+      letter-spacing: 6px;
+      pointer-events: none;
+    }
+    .stage-arrow {
+      position: absolute;
+      left: 50%;
+      top: 12px;
+      transform: translateX(-50%);
+      text-align: center;
+      font-size: 10px;
+      color: var(--ink-mute);
+      letter-spacing: 3px;
+      pointer-events: none;
+    }
+    .stage-arrow::before,
+    .stage-arrow::after {
+      content: "";
+      display: inline-block;
+      width: 60px;
+      height: 1px;
+      background: var(--line);
+      vertical-align: middle;
+      margin: 0 8px;
+    }
+
+    /* Tables */
+    .table {
+      position: absolute;
+      user-select: none;
+    }
+    .table.vertical   { width: 160px; height: 200px; }
+    .table.horizontal { width: 270px; height: 140px; }
+    .table.sweetheart { width: 220px; height: 80px; }
+
+    .table-shape {
+      position: absolute;
+      cursor: grab;
+      background: linear-gradient(180deg, #e1bf8c, #b88654 80%);
+      border-radius: 5px;
+      box-shadow: 0 2px 6px rgba(160, 110, 50, 0.22),
+                  inset 0 -2px 4px rgba(120, 80, 30, 0.25);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 1px;
+    }
+    .table-shape.dragging { cursor: grabbing; }
+
+    .table.vertical .table-shape {
+      width: 28px;
+      height: 160px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .table.vertical .table-shape .label-vertical {
+      writing-mode: vertical-rl;
+      transform: rotate(180deg);
+      letter-spacing: 2px;
+      font-size: 11px;
+    }
+    .table.horizontal .table-shape {
+      width: 200px;
+      height: 28px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .table.sweetheart .table-shape {
+      width: 160px;
+      height: 26px;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      background: linear-gradient(180deg, #f3d4a0 0%, #c25a4a 100%);
+      letter-spacing: 3px;
+      font-size: 11px;
+    }
+
+    /* Seats */
+    .seat {
+      position: absolute;
+      width: 56px;
+      height: 40px;
+      background: var(--panel);
+      border: 2px solid var(--line);
+      border-radius: 5px;
+      font-size: 9px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2px;
+      line-height: 1.15;
+      cursor: grab;
+      transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+      transform: translate(-50%, -50%);
+      box-shadow: 0 1px 3px rgba(120, 90, 50, 0.06);
+    }
+    .seat:active { cursor: grabbing; }
+    .seat.empty {
+      background: #f7f1e1;
+      border-style: dashed;
+      color: var(--ink-mute);
+      box-shadow: none;
+    }
+    .seat.empty .seat-name { color: var(--ink-mute); font-style: italic; font-weight: 400; }
+
+    .seat.dragging { opacity: 0.3; }
+    .seat.drop-target {
+      transform: translate(-50%, -50%) scale(1.15);
+      border-color: var(--accent);
+      background: var(--accent-bg);
+      box-shadow: 0 4px 10px rgba(180, 130, 80, 0.3);
+    }
+    .seat:hover {
+      border-color: var(--accent);
+      box-shadow: 0 3px 8px rgba(180, 130, 80, 0.18);
+      z-index: 10;
+    }
+
+    .seat .seat-num {
+      position: absolute;
+      top: -6px;
+      left: -6px;
+      width: 16px;
+      height: 16px;
+      background: var(--ink-soft);
+      color: white;
+      border-radius: 50%;
+      font-size: 9px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .seat.position-one .seat-num {
+      background: var(--accent);
+      box-shadow: 0 0 0 2px rgba(180, 130, 80, 0.3);
+    }
+    .seat.position-one { border-color: var(--accent); }
+
+    .seat.couple::after {
+      content: "♥";
+      position: absolute;
+      top: -5px;
+      right: -3px;
+      color: var(--couple);
+      font-size: 11px;
+      background: var(--panel);
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .seat.search-hit {
+      border-color: var(--highlight) !important;
+      box-shadow: 0 0 0 3px rgba(194, 90, 74, 0.3) !important;
+      z-index: 20;
+    }
+    .seat .seat-name {
+      font-weight: 600;
+      color: var(--ink);
+      font-size: 9.5px;
+      max-width: 52px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .seat .seat-note {
+      font-size: 7.5px;
+      color: var(--accent);
+      font-style: italic;
+      margin-top: 0;
+      max-width: 52px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* Position-1 controls */
+    .pos1-controls {
+      position: absolute;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 3px;
+      opacity: 0;
+      transition: opacity 0.2s;
+      z-index: 5;
+    }
+    .table.vertical   .pos1-controls { top: 2px; }
+    .table.horizontal .pos1-controls { top: 2px; }
+    .table.sweetheart .pos1-controls { display: none; }
+    .table:hover .pos1-controls { opacity: 1; }
+
+    .rot-btn {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      color: var(--ink-soft);
+      cursor: pointer;
+      font-size: 11px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+      font-family: inherit;
+    }
+    .rot-btn:hover { background: var(--accent); color: white; border-color: var(--accent); }
+    .rot-btn.reset { font-size: 10px; }
+
+    /* Tooltip */
+    .tooltip {
+      position: fixed;
+      background: var(--ink);
+      color: white;
+      font-size: 11px;
+      padding: 8px 10px;
+      border-radius: 6px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+      pointer-events: none;
+      z-index: 100;
+      max-width: 220px;
+      line-height: 1.5;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+    .tooltip.show { opacity: 1; }
+    .tooltip .tt-name { font-weight: 600; margin-bottom: 4px; font-size: 12px; }
+    .tooltip .tt-row { color: #e6dec8; }
+    .tooltip .tt-row b { color: var(--accent-soft); font-weight: 500; }
+
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      overflow-y: auto;
+      padding: 14px;
+    }
+    .sidebar h2 {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 8px;
+      padding-bottom: 5px;
+      border-bottom: 1px solid var(--line-soft);
+      letter-spacing: 0.5px;
+    }
+    .sidebar section { margin-bottom: 14px; }
+
+    .legend-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      color: var(--ink-soft);
+      margin-bottom: 5px;
+    }
+    .legend-swatch {
+      width: 20px;
+      height: 14px;
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+    .legend-swatch.dot { width: 14px; height: 14px; border-radius: 50%; }
+
+    .menu-list { font-size: 11px; color: var(--ink-soft); }
+    .menu-list .meal {
+      display: flex;
+      justify-content: space-between;
+      padding: 3px 0;
+      border-bottom: 1px dashed var(--line-soft);
+    }
+    .menu-list .meal:last-child { border-bottom: 0; }
+    .menu-list .count { font-weight: 600; color: var(--accent); }
+
+    .table-summary {
+      font-size: 11px;
+      padding: 6px 8px;
+      margin-bottom: 5px;
+      background: #faf4e4;
+      border-radius: 4px;
+      border-left: 3px solid var(--accent-soft);
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s;
+    }
+    .table-summary:hover {
+      background: #fff0d4;
+      border-left-color: var(--accent);
+    }
+    .table-summary .ts-name {
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 2px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .table-summary .ts-count {
+      font-weight: 400;
+      color: var(--ink-mute);
+      font-size: 10px;
+    }
+    .table-summary .ts-guests {
+      color: var(--ink-soft);
+      font-size: 10px;
+      line-height: 1.4;
+    }
+
+    .overlay-svg {
+      position: absolute;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 1;
+    }
+    .couple-line {
+      stroke: var(--couple);
+      stroke-width: 1.5;
+      stroke-dasharray: 4 3;
+      fill: none;
+      opacity: 0.5;
+    }
+
+    /* Modal */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(40, 30, 20, 0.5);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal-content {
+      background: var(--panel);
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 600px;
+      width: 90%;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+    }
+    .modal-content h3 {
+      font-size: 14px;
+      margin-bottom: 10px;
+      color: var(--ink);
+    }
+    .modal textarea {
+      flex: 1;
+      width: 100%;
+      min-height: 280px;
+      font-family: ui-monospace, monospace;
+      font-size: 11px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      resize: vertical;
+      color: var(--ink);
+    }
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(20px);
+      background: var(--ink);
+      color: white;
+      padding: 9px 14px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      opacity: 0;
+      transition: opacity 0.2s, transform 0.2s;
+      pointer-events: none;
+      z-index: 300;
+      box-shadow: 0 6px 16px rgba(0,0,0,0.25);
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>
+      Xiaodong &amp; Wendy Wedding · 座位安排
+      <span class="sub">2026.06.12 · Andaz Maui at Wailea</span>
+    </h1>
+  </header>
+
+  <div class="toolbar">
+    <div class="group">
+      <input type="text" class="search" id="search" placeholder="搜索宾客…" />
+    </div>
+    <div class="group">
+      <select class="zoom-select" id="zoom-select" title="缩放视图">
+        <option value="0.6">缩放 60%</option>
+        <option value="0.75">缩放 75%</option>
+        <option value="0.85">缩放 85%</option>
+        <option value="1" selected>缩放 100%</option>
+        <option value="1.15">缩放 115%</option>
+      </select>
+      <button class="btn" id="btn-auto">按 1 号位重排</button>
+      <button class="btn" id="btn-grid">恢复默认布局</button>
+    </div>
+    <div class="group">
+      <button class="btn" id="btn-download" title="下载为 .json 文件存到电脑">⬇ 下载备份</button>
+      <button class="btn" id="btn-export">查看 JSON</button>
+      <button class="btn" id="btn-import">导入 JSON</button>
+      <button class="btn danger" id="btn-reset">重置全部</button>
+    </div>
+    <span class="saved-indicator" id="saved-indicator">💾 自动保存于浏览器</span>
+    <div class="hint">
+      💡 拖动桌体移动 · 拖动名牌互换 · 悬停桌子用 ◀ ↻ ▶ 调整 1 号位
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="floor" id="floor">
+      <div class="floor-sizer" id="floor-sizer">
+        <div class="floor-inner" id="floor-inner">
+          <div class="stage-arrow">仪式 / 主舞台方向</div>
+          <div class="dance-floor">DANCE&nbsp;FLOOR</div>
+          <svg class="overlay-svg" id="overlay"></svg>
+        </div>
+      </div>
+    </div>
+
+    <aside class="sidebar">
+      <section>
+        <h2>图例</h2>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background: linear-gradient(180deg, #e1bf8c, #b88654);"></span>
+          <span>长方形宴会桌（拖动整桌）</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background: linear-gradient(180deg, #f3d4a0, #c25a4a);"></span>
+          <span>Sweetheart 新人桌</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch" style="background: white; border: 2px solid var(--line);"></span>
+          <span>座位（拖动名牌互换）</span>
+        </div>
+        <div class="legend-row">
+          <span class="legend-swatch dot" style="background: var(--accent);"></span>
+          <span>1 号位（默认左上）</span>
+        </div>
+        <div class="legend-row">
+          <span style="color: var(--couple); font-size: 14px; width: 20px; text-align: center;">♥</span>
+          <span>情侣 / 同伴邻座</span>
+        </div>
+      </section>
+
+      <section>
+        <h2>菜单统计</h2>
+        <div class="menu-list" id="menu-list"></div>
+      </section>
+
+      <section>
+        <h2>桌位概览</h2>
+        <div id="table-list"></div>
+      </section>
+    </aside>
+  </div>
+
+  <div class="tooltip" id="tooltip"></div>
+
+  <div class="modal" id="modal">
+    <div class="modal-content">
+      <h3 id="modal-title">JSON</h3>
+      <textarea id="modal-text"></textarea>
+      <div class="modal-actions">
+        <button class="btn" id="modal-cancel">关闭</button>
+        <button class="btn primary" id="modal-confirm" style="display: none;">应用</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // =============================================================
+    // Wedding Seating Chart — Andaz Maui banquet layout
+    //   Data extracted from 06_12_26_Seating_Chart.xlsx (latest)
+    //   U-shape: T1–T3 left, T6–T8 right, T4–T5 bottom, Sweetheart top.
+    // =============================================================
+
+    const STORAGE_KEY = 'xy-wedding-seating-v5';
+    const FLOOR_W = 1400, FLOOR_H = 900;
+    const DEFAULT_POS1 = 0;
+
+    // --- Seat positions per shape (relative to table container) -----
+    // Horizontal — container 270x140, body 200x28 at (35,56)
+    const HORIZONTAL_SEATS = [
+      { x: 55,  y: 28 },   // 0  top-left
+      { x: 115, y: 28 },   // 1
+      { x: 175, y: 28 },   // 2
+      { x: 235, y: 28 },   // 3  top-right
+      { x: 235, y: 112 },  // 4  bottom-right
+      { x: 175, y: 112 },  // 5
+      { x: 115, y: 112 },  // 6
+      { x: 55,  y: 112 },  // 7  bottom-left
+    ];
+
+    // Vertical — container 160x200, body 28x160 at (66,20)
+    const VERTICAL_SEATS = [
+      { x: 28,  y: 32 },   // 0  left-top
+      { x: 132, y: 32 },   // 1  right-top
+      { x: 132, y: 76 },   // 2
+      { x: 132, y: 120 },  // 3
+      { x: 132, y: 168 },  // 4  right-bottom
+      { x: 28,  y: 168 },  // 5  left-bottom
+      { x: 28,  y: 120 },  // 6
+      { x: 28,  y: 76 },   // 7
+    ];
+
+    // Sweetheart — container 220x80, body 160x26 at (30,27)
+    const SWEET_SEATS = [
+      { x: 78,  y: 62 },
+      { x: 142, y: 62 },
+    ];
+
+    function seatPositionsFor(shape) {
+      if (shape === 'horizontal') return HORIZONTAL_SEATS;
+      if (shape === 'vertical')   return VERTICAL_SEATS;
+      return SWEET_SEATS;
+    }
+
+    // -------------------------------------------------------------
+    // Initial guest data — from 06_12_26_Seating_Chart.xlsx
+    // -------------------------------------------------------------
+
+    const INITIAL_DATA = [
+      {
+        id: 'sweet', shortLabel: 'B & G', name: 'Sweetheart', theme: '新人桌',
+        shape: 'sweetheart', x: 590, y: 14,
+        guests: [
+          { name: 'Wendy Sun', entree: 'Duo Entrée', note: 'Bride' },
+          { name: 'Francis Yang', entree: 'Vegetarian', note: 'Groom' },
+        ],
+      },
+      {
+        id: 'T1', shortLabel: 'T1', name: 'Table 1', theme: '家人桌',
+        shape: 'vertical', x: 80, y: 110, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Francis 爸' },
+          { name: 'Francis 妈' },
+          { name: 'Wendy 爸' },
+          { name: 'Wendy 妈' },
+          { name: 'Junhuan Sun', note: 'Wendy 哥哥',   coupleId: 't1-a' },
+          { name: 'Zeli Zhang',  note: "Junhuan's GF", coupleId: 't1-a' },
+          { name: 'Kaiyi Zhang', note: '原 T2' },
+          { name: 'Cai Song',    note: '原 T8 · 邻接 T2 Mengda' },
+        ],
+      },
+      {
+        id: 'T2', shortLabel: 'T2', name: 'Table 2', theme: '猫猫狗狗',
+        shape: 'vertical', x: 80, y: 320, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Mengda Liu',   note: '邻接 T1 Cai Song', coupleId: 't2-a' },
+          { name: 'Siqi Fan',                                coupleId: 't2-a' },
+          { name: 'Yuqing Wang',                             coupleId: 't2-b' },
+          { name: 'Yijie Zhuang',                            coupleId: 't2-b' },
+          { name: 'Xueer Lu',     note: 'couple · 原 T1' },
+          { name: 'Xiaodan Chen', note: 'Canada · 原 T1' },
+        ],
+      },
+      {
+        id: 'T3', shortLabel: 'T3', name: 'Table 3', theme: '音乐节 / 火人节',
+        shape: 'vertical', x: 80, y: 530, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Allison',                                coupleId: 't3-a' },
+          { name: 'Arnold Luk',                             coupleId: 't3-a' },
+          { name: 'Ivy Mo' },
+          { name: 'Shatang Wang' },
+          { name: 'Ziwei Li' },
+          { name: 'Chenrui Zhou', note: 'NYC' },
+          { name: 'Mike Jiang',   note: '原 T4 · 换 Jiayu' },
+          { name: 'Xu Sun',       note: 'single · 原 T7' },
+        ],
+      },
+      {
+        id: 'T4', shortLabel: 'T4', name: 'Table 4', theme: '电影 / 胶片 / 摄影',
+        shape: 'horizontal', x: 420, y: 750, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Yate Ji',        coupleId: 't4-a' },
+          { name: 'Xinglin Wang',   coupleId: 't4-a' },
+          { name: 'Jiongsheng Cai', coupleId: 't4-b' },
+          { name: 'Yurui Yang',     coupleId: 't4-b' },
+          { name: 'Yichen Zhang',   coupleId: 't4-c' },
+          { name: 'Zhihong Luo',    coupleId: 't4-c' },
+          { name: 'Yifei Bao',      coupleId: 't4-d' },
+          { name: 'Yang Yang',      coupleId: 't4-d' },
+        ],
+      },
+      {
+        id: 'T5', shortLabel: 'T5', name: 'Table 5', theme: "Wendy 朋友圈",
+        shape: 'horizontal', x: 710, y: 750, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Jiayu Zhang',  note: '原 T2 · 邻 T4 电影组' },
+          { name: 'Yichi Zhang',  note: 'couple · 原 T2' },
+          { name: 'Kehan Bao' },
+          { name: 'Rui Xia',      note: 'NYC · 原 T8' },
+          { name: 'Jingxi Huang', note: '高中',     coupleId: 't5-a' },
+          { name: 'Zebang Li',                       coupleId: 't5-a' },
+          { name: 'Qi Leng',      note: '高中',     coupleId: 't5-b' },
+          { name: 'Kyle',                            coupleId: 't5-b' },
+        ],
+      },
+      {
+        id: 'T6', shortLabel: 'T6', name: 'Table 6', theme: '户外 / 滑雪',
+        shape: 'vertical', x: 1160, y: 530, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Jingyi Lin',  note: 'Jamie' },
+          { name: 'Ting Zhang',  note: '邻接 Jamie',  coupleId: 't6-a' },
+          { name: 'Jiechao He',  note: '原 T5',      coupleId: 't6-a' },
+          { name: 'Sundi' },
+          { name: 'Jiashan Song' },
+          { name: 'Yichu Wang' },
+          { name: 'Meshen',                           coupleId: 't6-b' },
+          { name: 'Erica',                            coupleId: 't6-b' },
+        ],
+      },
+      {
+        id: 'T7', shortLabel: 'T7', name: 'Table 7', theme: '美食',
+        shape: 'vertical', x: 1160, y: 320, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Zhixian Chen',                           coupleId: 't7-a' },
+          { name: 'Xinyue Geng',                            coupleId: 't7-a' },
+          { name: 'Tianliang Lin', note: 'single 美食' },
+          { name: 'Egan Zhang',    note: '原 T8 · 同桌 Zhenbang' },
+          { name: 'Zhenbang Chen', note: '同桌 Egan',       coupleId: 't7-b' },
+          { name: 'Jiayi Liu',                               coupleId: 't7-b' },
+          { name: 'Yannie Lee',                              coupleId: 't7-c' },
+          { name: 'Yichao Zhao',                             coupleId: 't7-c' },
+        ],
+      },
+      {
+        id: 'T8', shortLabel: 'T8', name: 'Table 8', theme: '红酒 / 初代夏威夷',
+        shape: 'vertical', x: 1160, y: 110, pos1: DEFAULT_POS1,
+        guests: [
+          { name: 'Xikai Chen' },
+          { name: 'Yueyi Ma',     note: '挨 Zhangchi', coupleId: 't8-a' },
+          { name: 'Zhangchi Yao', note: '挨 Yueyi',    coupleId: 't8-a' },
+          { name: 'Yawei Zhang',                       coupleId: 't8-b' },
+          { name: 'Xiaoke Chen',                       coupleId: 't8-b' },
+          { name: 'Mengni Zhang',                      coupleId: 't8-c' },
+          { name: 'Donnie',                            coupleId: 't8-c' },
+          { name: 'Yue Li',       note: 'NYC · 原 T5' },
+        ],
+      },
+    ];
+
+    // -------------------------------------------------------------
+    // State
+    // -------------------------------------------------------------
+
+    let state = null;
+    let currentZoom = 1;
+
+    function buildInitialState() {
+      return INITIAL_DATA.map(t => {
+        const isSweet = t.shape === 'sweetheart';
+        const seatCount = isSweet ? 2 : 8;
+        const seats = new Array(seatCount).fill(null);
+        const pos1 = isSweet ? 0 : (t.pos1 ?? DEFAULT_POS1);
+        for (let i = 0; i < t.guests.length && i < seatCount; i++) {
+          seats[(pos1 + i) % seatCount] = { ...t.guests[i] };
+        }
+        return {
+          id: t.id,
+          shortLabel: t.shortLabel,
+          name: t.name,
+          theme: t.theme,
+          shape: t.shape,
+          x: t.x,
+          y: t.y,
+          pos1,
+          seats,
+          originalOrder: t.guests.map(g => g.name),
+        };
+      });
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed) && parsed.length === INITIAL_DATA.length
+              && parsed.every(t => t.shape && Array.isArray(t.seats))) {
+            return parsed;
+          }
+        }
+      } catch (e) { /* fall through */ }
+      return buildInitialState();
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        flashSavedIndicator();
+      } catch (e) { console.warn('saveState failed', e); }
+    }
+
+    function flashSavedIndicator() {
+      const el = document.getElementById('saved-indicator');
+      if (!el) return;
+      const t = new Date();
+      const pad = n => n.toString().padStart(2, '0');
+      el.textContent = `💾 已保存 ${pad(t.getHours())}:${pad(t.getMinutes())}:${pad(t.getSeconds())}`;
+      el.classList.add('flash');
+      clearTimeout(flashSavedIndicator._t);
+      flashSavedIndicator._t = setTimeout(() => el.classList.remove('flash'), 600);
+    }
+
+    // -------------------------------------------------------------
+    // Render
+    // -------------------------------------------------------------
+
+    const floorInner = document.getElementById('floor-inner');
+    const overlay = document.getElementById('overlay');
+
+    function render() {
+      [...floorInner.querySelectorAll('.table')].forEach(el => el.remove());
+
+      state.forEach(table => {
+        const el = document.createElement('div');
+        el.className = `table ${table.shape}`;
+        el.dataset.id = table.id;
+        el.style.left = table.x + 'px';
+        el.style.top = table.y + 'px';
+
+        const shape = document.createElement('div');
+        shape.className = 'table-shape';
+        const labelText = escapeHtml(table.shortLabel || table.name);
+        if (table.shape === 'vertical') {
+          shape.innerHTML = `<span class="label-vertical">${labelText}</span>`;
+        } else {
+          shape.innerHTML = labelText;
+        }
+        el.appendChild(shape);
+
+        if (table.shape !== 'sweetheart') {
+          const ctrl = document.createElement('div');
+          ctrl.className = 'pos1-controls';
+          ctrl.innerHTML = `
+            <button class="rot-btn" data-action="ccw" title="1 号位逆时针">◀</button>
+            <button class="rot-btn reset" data-action="reset" title="按 1 号位顺时针重排此桌">↻</button>
+            <button class="rot-btn" data-action="cw" title="1 号位顺时针">▶</button>
+          `;
+          el.appendChild(ctrl);
+        }
+
+        const positions = seatPositionsFor(table.shape);
+        table.seats.forEach((guest, idx) => {
+          const seatEl = document.createElement('div');
+          seatEl.className = 'seat';
+          if (idx === table.pos1) seatEl.classList.add('position-one');
+          if (!guest) seatEl.classList.add('empty');
+          if (guest && (guest.coupleId || guest.couple)) seatEl.classList.add('couple');
+          seatEl.dataset.tableId = table.id;
+          seatEl.dataset.seatIdx = idx;
+          seatEl.draggable = !!guest;
+          seatEl.style.left = positions[idx].x + 'px';
+          seatEl.style.top = positions[idx].y + 'px';
+
+          const seatNum = ((idx - table.pos1 + table.seats.length) % table.seats.length) + 1;
+          seatEl.innerHTML = `
+            <div class="seat-num">${seatNum}</div>
+            <div class="seat-name">${guest ? escapeHtml(guest.name) : '空'}</div>
+            ${guest && guest.note ? `<div class="seat-note">${escapeHtml(guest.note)}</div>` : ''}
+          `;
+          el.appendChild(seatEl);
+        });
+
+        floorInner.appendChild(el);
+      });
+
+      renderCoupleLines();
+      renderMenuStats();
+      renderTableList();
+      saveState();
+    }
+
+    function renderCoupleLines() {
+      const groups = new Map();
+      state.forEach(table => {
+        const positions = seatPositionsFor(table.shape);
+        table.seats.forEach((g, idx) => {
+          if (g && g.coupleId) {
+            if (!groups.has(g.coupleId)) groups.set(g.coupleId, []);
+            groups.get(g.coupleId).push({
+              x: table.x + positions[idx].x,
+              y: table.y + positions[idx].y,
+            });
+          }
+        });
+      });
+      const lines = [];
+      groups.forEach(pts => {
+        for (let i = 0; i < pts.length; i++) {
+          for (let j = i + 1; j < pts.length; j++) {
+            lines.push({ x1: pts[i].x, y1: pts[i].y, x2: pts[j].x, y2: pts[j].y });
+          }
+        }
+      });
+      overlay.innerHTML = lines.map(l =>
+        `<line class="couple-line" x1="${l.x1}" y1="${l.y1}" x2="${l.x2}" y2="${l.y2}" />`
+      ).join('');
+    }
+
+    function renderMenuStats() {
+      const tally = { 'Duo Entrée': 0, 'Vegetarian': 0, 'Other': 0 };
+      let total = 0;
+      state.forEach(t => t.seats.forEach(g => {
+        if (!g) return;
+        total++;
+        if (g.entree === 'Duo Entrée') tally['Duo Entrée']++;
+        else if (g.entree === 'Vegetarian') tally['Vegetarian']++;
+        else tally['Other']++;
+      }));
+      document.getElementById('menu-list').innerHTML = `
+        <div class="meal"><span>总宾客</span><span class="count">${total}</span></div>
+        <div class="meal"><span>Duo Entrée（牛+龙虾）</span><span class="count">${tally['Duo Entrée']}</span></div>
+        <div class="meal"><span>Vegetarian（南瓜 Gnocchi）</span><span class="count">${tally['Vegetarian']}</span></div>
+        <div class="meal"><span>未选 / 其他</span><span class="count">${tally['Other']}</span></div>
+        <div class="meal" style="margin-top:6px; padding-top:6px; border-top:1px solid var(--line-soft);">
+          <span>Vendors 餐</span><span class="count">12</span>
+        </div>
+      `;
+    }
+
+    function renderTableList() {
+      const html = state.map(t => {
+        const guests = t.seats.filter(s => s).map(s => s.name).join('、');
+        return `
+          <div class="table-summary" data-id="${t.id}">
+            <div class="ts-name">
+              <span>${escapeHtml(t.shortLabel || t.name)} · ${escapeHtml(t.theme)}</span>
+              <span class="ts-count">${t.seats.filter(s => s).length} 位</span>
+            </div>
+            <div class="ts-guests">${escapeHtml(guests)}</div>
+          </div>
+        `;
+      }).join('');
+      document.getElementById('table-list').innerHTML = html;
+      document.querySelectorAll('.table-summary').forEach(el => {
+        el.addEventListener('click', () => {
+          const t = state.find(x => x.id === el.dataset.id);
+          if (!t) return;
+          const floor = document.getElementById('floor');
+          floor.scrollTo({
+            left: Math.max(0, t.x * currentZoom - 200),
+            top:  Math.max(0, t.y * currentZoom - 100),
+            behavior: 'smooth',
+          });
+          flashTable(t.id);
+        });
+      });
+    }
+
+    function flashTable(id) {
+      const el = document.querySelector(`.table[data-id="${id}"]`);
+      if (!el) return;
+      const shape = el.querySelector('.table-shape');
+      shape.animate(
+        [{ boxShadow: '0 0 0 0 rgba(194, 90, 74, 0.6)' },
+         { boxShadow: '0 0 0 20px rgba(194, 90, 74, 0)' }],
+        { duration: 800, iterations: 1 }
+      );
+    }
+
+    function escapeHtml(s) {
+      return String(s ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    // -------------------------------------------------------------
+    // Zoom
+    // -------------------------------------------------------------
+
+    function setZoom(z) {
+      currentZoom = z;
+      const sizer = document.getElementById('floor-sizer');
+      sizer.style.width = (FLOOR_W * z) + 'px';
+      sizer.style.height = (FLOOR_H * z) + 'px';
+      floorInner.style.transform = `scale(${z})`;
+    }
+
+    document.getElementById('zoom-select').addEventListener('change', (e) => {
+      setZoom(parseFloat(e.target.value));
+    });
+
+    // Auto-fit on first load: pick the largest zoom level that fits
+    function autoFit() {
+      const floor = document.getElementById('floor');
+      const sx = floor.clientWidth / FLOOR_W;
+      const sy = floor.clientHeight / FLOOR_H;
+      const fit = Math.min(sx, sy);
+      const options = [0.6, 0.75, 0.85, 1, 1.15];
+      let best = options[0];
+      for (const o of options) {
+        if (o <= fit) best = o;
+      }
+      document.getElementById('zoom-select').value = best.toString();
+      setZoom(best);
+    }
+
+    // -------------------------------------------------------------
+    // Drag & drop — guests between seats
+    // -------------------------------------------------------------
+
+    let dragSrc = null;
+
+    floorInner.addEventListener('dragstart', (e) => {
+      const seat = e.target.closest('.seat');
+      if (!seat || seat.classList.contains('empty')) {
+        e.preventDefault();
+        return;
+      }
+      dragSrc = {
+        tableId: seat.dataset.tableId,
+        seatIdx: parseInt(seat.dataset.seatIdx, 10),
+      };
+      seat.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', 'seat');
+    });
+
+    floorInner.addEventListener('dragend', (e) => {
+      const seat = e.target.closest('.seat');
+      if (seat) seat.classList.remove('dragging');
+      document.querySelectorAll('.seat.drop-target').forEach(s => s.classList.remove('drop-target'));
+      dragSrc = null;
+    });
+
+    floorInner.addEventListener('dragover', (e) => {
+      const seat = e.target.closest('.seat');
+      if (!seat || !dragSrc) return;
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.seat.drop-target').forEach(s => s.classList.remove('drop-target'));
+      seat.classList.add('drop-target');
+    });
+
+    floorInner.addEventListener('dragleave', (e) => {
+      const seat = e.target.closest('.seat');
+      if (seat) seat.classList.remove('drop-target');
+    });
+
+    floorInner.addEventListener('drop', (e) => {
+      const seat = e.target.closest('.seat');
+      if (!seat || !dragSrc) return;
+      e.preventDefault();
+      const dst = {
+        tableId: seat.dataset.tableId,
+        seatIdx: parseInt(seat.dataset.seatIdx, 10),
+      };
+      if (dst.tableId === dragSrc.tableId && dst.seatIdx === dragSrc.seatIdx) return;
+      swapSeats(dragSrc, dst);
+      render();
+      toast(`已交换：${describeSeat(dragSrc)} ↔ ${describeSeat(dst)}`);
+    });
+
+    function swapSeats(a, b) {
+      const ta = state.find(t => t.id === a.tableId);
+      const tb = state.find(t => t.id === b.tableId);
+      const tmp = ta.seats[a.seatIdx];
+      ta.seats[a.seatIdx] = tb.seats[b.seatIdx];
+      tb.seats[b.seatIdx] = tmp;
+    }
+
+    function describeSeat(s) {
+      const t = state.find(x => x.id === s.tableId);
+      const g = t.seats[s.seatIdx];
+      return g ? `${t.shortLabel} · ${g.name}` : `${t.shortLabel} · 空位`;
+    }
+
+    // -------------------------------------------------------------
+    // Table dragging — accounts for current zoom
+    // -------------------------------------------------------------
+
+    let tableDrag = null;
+
+    floorInner.addEventListener('pointerdown', (e) => {
+      const shape = e.target.closest('.table-shape');
+      if (!shape) return;
+      const tableEl = shape.closest('.table');
+      const table = state.find(t => t.id === tableEl.dataset.id);
+      if (!table) return;
+      shape.classList.add('dragging');
+      shape.setPointerCapture(e.pointerId);
+      const floor = document.getElementById('floor');
+      const floorRect = floor.getBoundingClientRect();
+      // Convert pointer → unscaled floor coordinates
+      const px = (e.clientX - floorRect.left + floor.scrollLeft) / currentZoom;
+      const py = (e.clientY - floorRect.top  + floor.scrollTop)  / currentZoom;
+      tableDrag = {
+        table, tableEl, shape,
+        pointerId: e.pointerId,
+        ox: px - table.x,   // offset within table
+        oy: py - table.y,
+        floor, floorRect,
+      };
+    });
+
+    floorInner.addEventListener('pointermove', (e) => {
+      if (!tableDrag || e.pointerId !== tableDrag.pointerId) return;
+      const { table, tableEl, floor, floorRect, ox, oy } = tableDrag;
+      const px = (e.clientX - floorRect.left + floor.scrollLeft) / currentZoom;
+      const py = (e.clientY - floorRect.top  + floor.scrollTop)  / currentZoom;
+      const x = px - ox;
+      const y = py - oy;
+      const maxX = FLOOR_W - tableEl.offsetWidth;
+      const maxY = FLOOR_H - tableEl.offsetHeight;
+      table.x = Math.max(0, Math.min(maxX, x));
+      table.y = Math.max(0, Math.min(maxY, y));
+      tableEl.style.left = table.x + 'px';
+      tableEl.style.top = table.y + 'px';
+      renderCoupleLines();
+    });
+
+    floorInner.addEventListener('pointerup', (e) => {
+      if (!tableDrag || e.pointerId !== tableDrag.pointerId) return;
+      tableDrag.shape.classList.remove('dragging');
+      try { tableDrag.shape.releasePointerCapture(e.pointerId); } catch {}
+      tableDrag = null;
+      saveState();
+    });
+
+    // -------------------------------------------------------------
+    // Position-1 rotation
+    // -------------------------------------------------------------
+
+    floorInner.addEventListener('click', (e) => {
+      const btn = e.target.closest('.rot-btn');
+      if (!btn) return;
+      const tableEl = btn.closest('.table');
+      const table = state.find(t => t.id === tableEl.dataset.id);
+      if (!table || table.shape === 'sweetheart') return;
+      const n = table.seats.length;
+      const action = btn.dataset.action;
+      if (action === 'cw') {
+        table.pos1 = (table.pos1 + 1) % n;
+      } else if (action === 'ccw') {
+        table.pos1 = (table.pos1 - 1 + n) % n;
+      } else if (action === 'reset') {
+        const order = table.originalOrder
+          .map(name => findGuestByName(name))
+          .filter(Boolean);
+        const newSeats = new Array(n).fill(null);
+        for (let i = 0; i < order.length; i++) {
+          newSeats[(table.pos1 + i) % n] = order[i];
+        }
+        table.seats = newSeats;
+      }
+      render();
+    });
+
+    function findGuestByName(name) {
+      for (const t of state) {
+        for (const s of t.seats) {
+          if (s && s.name === name) return { ...s };
+        }
+      }
+      return null;
+    }
+
+    // -------------------------------------------------------------
+    // Tooltip
+    // -------------------------------------------------------------
+
+    const tooltip = document.getElementById('tooltip');
+
+    floorInner.addEventListener('mouseover', (e) => {
+      const seat = e.target.closest('.seat');
+      if (!seat || seat.classList.contains('empty')) return;
+      const table = state.find(t => t.id === seat.dataset.tableId);
+      const idx = parseInt(seat.dataset.seatIdx, 10);
+      const guest = table.seats[idx];
+      if (!guest) return;
+      const seatNum = ((idx - table.pos1 + table.seats.length) % table.seats.length) + 1;
+      tooltip.innerHTML = `
+        <div class="tt-name">${escapeHtml(guest.name)}</div>
+        <div class="tt-row"><b>桌位</b> ${escapeHtml(table.shortLabel)} · 座 #${seatNum}</div>
+        <div class="tt-row"><b>主题</b> ${escapeHtml(table.theme)}</div>
+        ${guest.entree ? `<div class="tt-row"><b>套餐</b> ${escapeHtml(guest.entree)}</div>` : ''}
+        ${guest.note ? `<div class="tt-row"><b>备注</b> ${escapeHtml(guest.note)}</div>` : ''}
+        ${guest.coupleId ? `<div class="tt-row" style="color:#f5b1c2;">♥ 情侣 / 同伴</div>` : ''}
+      `;
+      tooltip.classList.add('show');
+      moveTooltip(e);
+    });
+    floorInner.addEventListener('mousemove', moveTooltip);
+    floorInner.addEventListener('mouseout', (e) => {
+      const seat = e.target.closest('.seat');
+      if (seat) tooltip.classList.remove('show');
+    });
+    function moveTooltip(e) {
+      if (!tooltip.classList.contains('show')) return;
+      const x = e.clientX + 14;
+      const y = e.clientY + 14;
+      const w = tooltip.offsetWidth;
+      const h = tooltip.offsetHeight;
+      tooltip.style.left = Math.min(window.innerWidth - w - 8, x) + 'px';
+      tooltip.style.top = Math.min(window.innerHeight - h - 8, y) + 'px';
+    }
+
+    // -------------------------------------------------------------
+    // Search
+    // -------------------------------------------------------------
+
+    const searchInput = document.getElementById('search');
+    searchInput.addEventListener('input', () => {
+      const q = searchInput.value.trim().toLowerCase();
+      document.querySelectorAll('.seat.search-hit').forEach(s => s.classList.remove('search-hit'));
+      if (!q) return;
+      let firstHit = null;
+      document.querySelectorAll('.seat').forEach(seatEl => {
+        if (seatEl.classList.contains('empty')) return;
+        const t = state.find(x => x.id === seatEl.dataset.tableId);
+        const g = t.seats[parseInt(seatEl.dataset.seatIdx, 10)];
+        if (g && g.name.toLowerCase().includes(q)) {
+          seatEl.classList.add('search-hit');
+          if (!firstHit) firstHit = { seatEl, table: t };
+        }
+      });
+      if (firstHit) {
+        const floor = document.getElementById('floor');
+        floor.scrollTo({
+          left: Math.max(0, firstHit.table.x * currentZoom - 250),
+          top:  Math.max(0, firstHit.table.y * currentZoom - 100),
+          behavior: 'smooth',
+        });
+      }
+    });
+
+    // -------------------------------------------------------------
+    // Toolbar
+    // -------------------------------------------------------------
+
+    document.getElementById('btn-auto').addEventListener('click', () => {
+      if (!confirm('将每张桌的宾客按当前 1 号位顺时针重新排列？\n（之前的手动拖动会被覆盖，但宾客分桌不变）')) return;
+      state.forEach(table => {
+        if (table.shape === 'sweetheart') return;
+        const order = table.originalOrder.map(name => findGuestByName(name)).filter(Boolean);
+        const n = table.seats.length;
+        const newSeats = new Array(n).fill(null);
+        for (let i = 0; i < order.length; i++) {
+          newSeats[(table.pos1 + i) % n] = order[i];
+        }
+        table.seats = newSeats;
+      });
+      render();
+      toast('已按 1 号位顺时针重新排列');
+    });
+
+    document.getElementById('btn-grid').addEventListener('click', () => {
+      INITIAL_DATA.forEach(orig => {
+        const t = state.find(x => x.id === orig.id);
+        if (t) { t.x = orig.x; t.y = orig.y; }
+      });
+      render();
+      toast('已恢复默认布局');
+    });
+
+    document.getElementById('btn-reset').addEventListener('click', () => {
+      if (!confirm('确定重置全部布局？所有手动调整都会被清除（建议先点 ⬇ 下载备份）。')) return;
+      localStorage.removeItem(STORAGE_KEY);
+      state = buildInitialState();
+      render();
+      toast('已恢复初始布局');
+    });
+
+    document.getElementById('btn-download').addEventListener('click', () => {
+      const json = JSON.stringify(state, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+      a.href = url;
+      a.download = `wedding-seating-${ts}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      toast('已下载备份到电脑');
+    });
+
+    const modal = document.getElementById('modal');
+    const modalTitle = document.getElementById('modal-title');
+    const modalText = document.getElementById('modal-text');
+    const modalConfirm = document.getElementById('modal-confirm');
+
+    document.getElementById('btn-export').addEventListener('click', () => {
+      modalTitle.textContent = '当前布局 JSON（可复制保存）';
+      modalText.value = JSON.stringify(state, null, 2);
+      modalText.readOnly = true;
+      modalConfirm.style.display = 'none';
+      modal.classList.add('show');
+      setTimeout(() => { modalText.select(); }, 50);
+    });
+
+    document.getElementById('btn-import').addEventListener('click', () => {
+      modalTitle.textContent = '导入 JSON（粘贴后点应用）';
+      modalText.value = '';
+      modalText.readOnly = false;
+      modalConfirm.style.display = '';
+      modal.classList.add('show');
+      setTimeout(() => { modalText.focus(); }, 50);
+    });
+
+    modalConfirm.addEventListener('click', () => {
+      try {
+        const parsed = JSON.parse(modalText.value);
+        if (!Array.isArray(parsed)) throw new Error('not array');
+        state = parsed;
+        modal.classList.remove('show');
+        render();
+        toast('已导入布局');
+      } catch (e) {
+        alert('JSON 格式错误：' + e.message);
+      }
+    });
+
+    document.getElementById('modal-cancel').addEventListener('click', () => {
+      modal.classList.remove('show');
+    });
+
+    // -------------------------------------------------------------
+    // Toast
+    // -------------------------------------------------------------
+
+    let toastTimer = null;
+    const toastEl = document.getElementById('toast');
+    function toast(msg) {
+      toastEl.textContent = msg;
+      toastEl.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toastEl.classList.remove('show'), 2200);
+    }
+
+    // -------------------------------------------------------------
+    // Init
+    // -------------------------------------------------------------
+
+    state = loadState();
+    render();
+    autoFit();
+    window.addEventListener('resize', () => {
+      // Don't auto-rescale on resize — user may have set a zoom manually.
+      // Just keep current scale.
+    });
+  </script>
+</body>
+</html>
