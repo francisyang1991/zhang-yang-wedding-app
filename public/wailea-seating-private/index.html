@@ -696,7 +696,7 @@
     </div>
     <span class="saved-indicator" id="saved-indicator">⏳ 连接中…</span>
     <div class="hint">
-      💡 拖动桌体移动 · 拖动名牌互换 · <b>双击名牌</b>编辑姓名/备注/情侣 · 悬停桌子用 ◀ ↻ ▶ 调 1 号位 · 实时同步
+      💡 <b>点名牌</b>改姓名/备注/情侣 · <b>点桌身</b>改主题 · 拖名牌互换 · 拖桌身移动 · 悬停桌子用 ◀ ↻ ▶ 调 1 号位 · 实时同步
     </div>
   </div>
 
@@ -1436,12 +1436,22 @@
         pointerId: e.pointerId,
         ox: px - table.x,   // offset within table
         oy: py - table.y,
+        startClientX: e.clientX,
+        startClientY: e.clientY,
+        moved: false,
         floor, floorRect,
       };
     });
 
     floorInner.addEventListener('pointermove', (e) => {
       if (!tableDrag || e.pointerId !== tableDrag.pointerId) return;
+      // Suppress micro-jitter so a click isn't mistaken for a drag
+      if (!tableDrag.moved) {
+        const dx = e.clientX - tableDrag.startClientX;
+        const dy = e.clientY - tableDrag.startClientY;
+        if (Math.hypot(dx, dy) < 4) return;
+        tableDrag.moved = true;
+      }
       const { table, tableEl, floor, floorRect, ox, oy } = tableDrag;
       const px = (e.clientX - floorRect.left + floor.scrollLeft) / currentZoom;
       const py = (e.clientY - floorRect.top  + floor.scrollTop)  / currentZoom;
@@ -1460,8 +1470,15 @@
       if (!tableDrag || e.pointerId !== tableDrag.pointerId) return;
       tableDrag.shape.classList.remove('dragging');
       try { tableDrag.shape.releasePointerCapture(e.pointerId); } catch {}
+      const wasClick = !tableDrag.moved;
+      const tableId = tableDrag.table.id;
       tableDrag = null;
-      saveState();
+      if (wasClick) {
+        // Click without drag → open table-theme editor
+        openTableEditor(tableId);
+      } else {
+        saveState();
+      }
       // Apply any remote update that arrived while we were dragging
       if (queuedRemoteUpdate) {
         const q = queuedRemoteUpdate;
@@ -1673,7 +1690,8 @@
     // Seat editor — double-click a seat to edit name / note / couple
     // -------------------------------------------------------------
 
-    let editingSeat = null;   // { tableId, seatIdx } while editor is open
+    let editingSeat = null;   // { tableId, seatIdx } while seat editor is open
+    let editingTable = null;  // tableId while table editor is open
     let pairingFrom = null;   // { tableId, seatIdx } while picking a pair partner
 
     function openEditor(tableId, seatIdx) {
@@ -1836,8 +1854,101 @@
       }
     }
 
-    // Double-click any non-empty seat → open editor
-    floorInner.addEventListener('dblclick', (e) => {
+    // ---- Table editor (click table body to edit theme / label) ----
+
+    function openTableEditor(tableId) {
+      closeEditor();
+      closeTableEditor();
+      const table = state.find(t => t.id === tableId);
+      if (!table) return;
+      editingTable = tableId;
+
+      const editor = document.createElement('div');
+      editor.className = 'seat-editor';
+      editor.id = 'table-editor';
+      const isSweet = table.shape === 'sweetheart';
+      editor.innerHTML = `
+        <h4>编辑桌位 — ${escapeHtml(table.shortLabel)}</h4>
+        <label>主题（侧栏 + tooltip 显示）</label>
+        <input type="text" id="te-theme" value="${escapeHtml(table.theme)}" placeholder="如：电影 / 胶片 / 摄影" />
+        <label>桌位标签（圆牌上的文字）</label>
+        <input type="text" id="te-label" value="${escapeHtml(table.shortLabel)}" placeholder="T1 / B&G…" />
+        ${isSweet ? '' : `
+          <label style="margin-top:4px;">布局</label>
+          <select id="te-shape" style="padding:5px 7px;border:1px solid var(--line);border-radius:4px;font-family:inherit;font-size:12px;color:var(--ink);">
+            <option value="vertical"   ${table.shape === 'vertical'   ? 'selected' : ''}>竖向（侧排座位）</option>
+            <option value="horizontal" ${table.shape === 'horizontal' ? 'selected' : ''}>横向（上下排座位）</option>
+          </select>`}
+        <div class="actions">
+          <button class="btn" id="te-cancel">取消</button>
+          <button class="btn primary" id="te-save">保存</button>
+        </div>
+      `;
+
+      const tableEl = document.querySelector(`.table[data-id="${tableId}"]`);
+      if (tableEl) {
+        const rect = tableEl.getBoundingClientRect();
+        let left = rect.right + 12;
+        let top = rect.top;
+        const w = 250, h = 280;
+        if (left + w > window.innerWidth) left = rect.left - w - 12;
+        if (left < 8) left = 8;
+        if (top + h > window.innerHeight) top = window.innerHeight - h - 8;
+        if (top < 8) top = 8;
+        editor.style.left = left + 'px';
+        editor.style.top  = top  + 'px';
+      } else {
+        editor.style.left = '50%';
+        editor.style.top  = '50%';
+        editor.style.transform = 'translate(-50%, -50%)';
+      }
+      document.body.appendChild(editor);
+
+      const themeInput = document.getElementById('te-theme');
+      themeInput.focus();
+      themeInput.select();
+
+      document.getElementById('te-save').onclick = () => { saveTableEditor(); render(); };
+      document.getElementById('te-cancel').onclick = closeTableEditor;
+      editor.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); saveTableEditor(); render(); }
+      });
+    }
+
+    function saveTableEditor(opts = {}) {
+      if (!editingTable) return;
+      const themeEl = document.getElementById('te-theme');
+      const labelEl = document.getElementById('te-label');
+      const shapeEl = document.getElementById('te-shape');
+      if (!themeEl || !labelEl) return;
+      const theme = themeEl.value.trim();
+      const label = labelEl.value.trim();
+      const table = state.find(t => t.id === editingTable);
+      if (!table) return;
+      if (theme) table.theme = theme;
+      if (label) table.shortLabel = label;
+      if (shapeEl && shapeEl.value && shapeEl.value !== table.shape) {
+        table.shape = shapeEl.value;
+        // Container size changes; nudge inside floor if it would overflow
+        const w = table.shape === 'vertical' ? 160 : 270;
+        const h = table.shape === 'vertical' ? 200 : 140;
+        table.x = Math.max(0, Math.min(FLOOR_W - w, table.x));
+        table.y = Math.max(0, Math.min(FLOOR_H - h, table.y));
+      }
+      if (!opts.silent) closeTableEditor();
+    }
+
+    function closeTableEditor() {
+      document.getElementById('table-editor')?.remove();
+      editingTable = null;
+    }
+
+    // Single click on a non-empty seat → open editor
+    // (HTML5 drag-and-drop only fires dragstart when an actual drag begins,
+    //  so a pure click without movement reaches this handler.)
+    floorInner.addEventListener('click', (e) => {
+      if (pairingFrom) return;                          // pair-mode click handles itself
+      if (e.target.closest('.rot-btn')) return;         // rotate buttons handle their own click
       const seat = e.target.closest('.seat');
       if (!seat || seat.classList.contains('empty')) return;
       e.preventDefault();
@@ -1855,20 +1966,22 @@
       completePairing(seat.dataset.tableId, parseInt(seat.dataset.seatIdx, 10));
     }, true);
 
-    // Click outside the editor closes it (but not during pairing)
+    // Click outside any editor saves & closes it (but not during pairing)
     document.addEventListener('mousedown', (e) => {
-      if (!editingSeat || pairingFrom) return;
-      if (e.target.closest('#seat-editor')) return;
-      if (e.target.closest('.seat')) return; // double-click on another seat handles itself
-      saveEditor();
-      render();
+      if (pairingFrom) return;
+      if (e.target.closest('#seat-editor') || e.target.closest('#table-editor')) return;
+      if (e.target.closest('.seat')) return;        // click on a seat opens its editor
+      if (e.target.closest('.table-shape')) return; // click on table-shape opens table editor
+      if (editingSeat)  { saveEditor();      render(); }
+      if (editingTable) { saveTableEditor(); render(); }
     });
 
     // Esc cancels editor / pairing
     document.addEventListener('keydown', (e) => {
       if (e.key !== 'Escape') return;
-      if (pairingFrom) cancelPairing();
-      else if (editingSeat) closeEditor();
+      if (pairingFrom)        cancelPairing();
+      else if (editingSeat)   closeEditor();
+      else if (editingTable)  closeTableEditor();
     });
 
     // -------------------------------------------------------------
