@@ -15,7 +15,7 @@ import { photoService } from './services/photoService';
 import { guestService } from './services/guestService';
 import { scheduleService } from './services/scheduleService';
 import { supabase } from './services/supabaseClient';
-import { Calendar, MapPin, Heart, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, Heart, Plane, ChevronDown, ChevronUp, Lock, Sparkles, Sun, Footprints, Wind, Shirt, Car } from 'lucide-react';
 
 const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2000&auto=format&fit=crop", // Resort Pool
@@ -322,6 +322,46 @@ const App: React.FC = () => {
                  </button>
               </div>
            )}
+        </div>
+      </section>
+
+      {/* GOOD TO KNOW */}
+      <section id="good-to-know" className="py-20 bg-wedding-sand/20 scroll-mt-24 border-b border-gray-100">
+        <div className="max-w-5xl mx-auto px-6">
+          <div className="text-center mb-12">
+            <Sparkles className="w-6 h-6 text-wedding-gold mx-auto mb-4" />
+            <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-3">Good to Know</h2>
+            <p className="text-gray-500 max-w-lg mx-auto">A few tips to help you enjoy the day · 几点温馨提示</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              { Icon: Footprints, en: 'Grass Ceremony', zh: '草坪仪式',
+                desc: 'The ceremony is on the lawn (Laule’a 3) — opt for block heels or flats. 仪式在草坪上，建议粗跟鞋或平底鞋。' },
+              { Icon: Sun, en: 'Sun & Sunset', zh: '防晒与日落',
+                desc: 'The 4 PM sun is strong — bring sunscreen, sunglasses & a hat. Golden-hour sunset is at 7:07 PM. 下午4点日晒较强，备好防晒、墨镜和帽子；日落 7:07，黄金时刻别错过。' },
+              { Icon: Wind, en: 'Evening Breeze', zh: '海边晚风',
+                desc: 'Oceanfront evenings can get breezy — a light layer is perfect. 海边夜晚微凉，带一件薄外套刚好。' },
+              { Icon: Shirt, en: 'Dress Code', zh: '着装',
+                desc: 'Fri ceremony: Semi-Formal / Cocktail. After-Party: Hawaiian — go tropical! 周五仪式 Semi-Formal / Cocktail；After Party 夏威夷风，越花越好！' },
+              { Icon: Car, en: 'Getting There', zh: '抵达',
+                desc: 'Andaz Maui at Wailea · 3550 Wailea Alanui Dr. Parking & valet are available at the resort. Andaz Maui，地址 3550 Wailea Alanui Dr，酒店提供停车与代客泊车。' },
+              { Icon: Heart, en: 'Most of All', zh: '最重要的',
+                desc: 'Come ready to celebrate, dance, and make memories with us! 带着好心情来，和我们一起跳舞、留下美好回忆！' },
+            ].map(({ Icon, en, zh, desc }, i) => (
+              <div key={i} className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="bg-wedding-gold/10 text-wedding-gold p-2 rounded-full">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <h3 className="font-serif text-lg text-wedding-text leading-tight">{en}</h3>
+                    <span className="text-[11px] text-wedding-gold font-bold tracking-wide">{zh}</span>
+                  </div>
+                </div>
+                <p className="text-gray-500 text-sm leading-relaxed">{desc}</p>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
