@@ -3,7 +3,6 @@ import React, { useState, useEffect } from 'react';
 import { ONSITE_OPTIONS, MANUAL_HOTEL_OPTIONS, WEDDING_SCHEDULE, MOCK_GUEST_LIST, ANDAZ_ACTIVITIES } from './constants';
 import AccommodationCard from './components/AccommodationCard';
 import BookingStrategy from './components/BookingStrategy';
-import GuestShareBoard from './components/GuestShareBoard';
 import Timeline from './components/Timeline';
 import OurStory from './components/OurStory';
 import TravelInfo from './components/TravelInfo';
@@ -16,7 +15,7 @@ import { photoService } from './services/photoService';
 import { guestService } from './services/guestService';
 import { scheduleService } from './services/scheduleService';
 import { supabase } from './services/supabaseClient';
-import { Calendar, MapPin, Heart, Gift, Check, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
+import { Calendar, MapPin, Heart, Plane, ChevronDown, ChevronUp, Lock, Sparkles } from 'lucide-react';
 
 const HERO_IMAGES = [
   "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2000&auto=format&fit=crop", // Resort Pool
@@ -332,27 +331,12 @@ const App: React.FC = () => {
            <Heart className="w-6 h-6 text-wedding-gold mx-auto mb-6" />
            <h2 className="font-serif text-3xl md:text-4xl text-wedding-text mb-6">Stay With Us in Paradise</h2>
            <p className="text-gray-600 leading-relaxed mb-8 font-light text-lg">
-             We have secured a block of rooms at the stunning <strong>Andaz Maui</strong>. 
-             Xiaodong & Yuwen are providing a special gift to our guests to help with travel costs.
+             We have secured a block of rooms at the stunning <strong>Andaz Maui</strong>.
              <br />
              <span className="text-sm font-bold text-wedding-gold mt-2 block">
                 Discounted rates are available for our beloved guests (2 or more days stay).
              </span>
            </p>
-           <div className="bg-white border border-wedding-gold/20 rounded-xl p-6 mb-8 shadow-sm">
-              <div className="flex flex-col items-center">
-                 <div className="bg-wedding-gold text-white p-2 rounded-full mb-3 shadow-lg">
-                    <Gift className="w-6 h-6" />
-                 </div>
-                 <h3 className="font-serif text-xl font-bold text-wedding-text mb-2">Our Gift to You</h3>
-                 <div className="text-sm text-gray-700 bg-gray-50 p-4 rounded-lg border border-gray-100 inline-block max-w-lg">
-                    <div className="flex items-start gap-3 text-left">
-                       <Check className="w-5 h-5 text-wedding-gold shrink-0 mt-0.5" />
-                       <span>We will cover <strong>1 night's stay</strong> for the 6/12 wedding day (rate similar to standard room block rate in Andaz).</span>
-                    </div>
-                 </div>
-              </div>
-           </div>
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -392,16 +376,6 @@ const App: React.FC = () => {
                <p className="text-gray-500 max-w-lg mx-auto">Essential information for your journey. <strong>Book your rental car early!</strong></p>
            </div>
            <TravelInfo />
-        </div>
-      </section>
-
-      <section id="share-board" className="py-20 bg-white scroll-mt-24 border-t border-gray-100">
-        <div className="max-w-4xl mx-auto px-4">
-            <div className="text-center mb-8">
-               <span className="text-wedding-gold font-bold text-xs uppercase tracking-widest">Community</span>
-               <h2 className="font-serif text-3xl text-wedding-text mt-2">Share a Stay</h2>
-            </div>
-            <GuestShareBoard />
         </div>
       </section>
 
