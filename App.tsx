@@ -376,33 +376,6 @@ const App: React.FC = () => {
                 </div>
             </div>
 
-            <div className="mb-20">
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="h-px bg-gray-200 flex-1"></div>
-                    <h3 className="font-serif text-3xl text-wedding-text text-center min-w-max">Official Room Block</h3>
-                    <div className="h-px bg-gray-200 flex-1"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mx-auto justify-center">
-                    {onsite.map(acc => <AccommodationCard key={acc.id} data={acc} pricingMode={pricingMode} viewMode={viewMode} />)}
-                </div>
-            </div>
-            
-            <div className="mb-20">
-                <BookingStrategy />
-            </div>
-
-            {budget.length > 0 && (
-            <div className="mb-20">
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="h-px bg-gray-200 flex-1"></div>
-                    <h3 className="font-serif text-2xl text-wedding-text text-center min-w-max">Alternative Recommendation</h3>
-                    <div className="h-px bg-gray-200 flex-1"></div>
-                </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 justify-center">
-                    {budget.map(acc => <AccommodationCard key={acc.id} data={acc} pricingMode={pricingMode} viewMode={viewMode} />)}
-                </div>
-            </div>
-            )}
         </div>
       </section>
 
