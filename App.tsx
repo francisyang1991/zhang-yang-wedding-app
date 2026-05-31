@@ -10,6 +10,7 @@ import RSVPModal from './components/RSVPModal';
 import AdminDashboard from './components/AdminDashboard';
 import MenuPreview from './components/MenuPreview';
 import ScheduleModal from './components/ScheduleModal';
+import FindYourSeat from './components/FindYourSeat';
 import { Accommodation, Guest } from './types';
 import { photoService } from './services/photoService';
 import { guestService } from './services/guestService';
@@ -211,6 +212,7 @@ const App: React.FC = () => {
              <div className="hidden md:flex space-x-6 lg:space-x-8 text-xs font-bold text-gray-500 uppercase tracking-widest">
                 <a href="#welcome" onClick={(e) => scrollToSection(e, 'welcome')} className="hover:text-wedding-gold transition-colors cursor-pointer">Home</a>
                 <a href="#schedule" onClick={(e) => scrollToSection(e, 'schedule')} className="hover:text-wedding-gold transition-colors cursor-pointer">Schedule</a>
+                <a href="#seating" onClick={(e) => scrollToSection(e, 'seating')} className="hover:text-wedding-gold transition-colors cursor-pointer">Seats</a>
                 <a href="#story" onClick={(e) => scrollToSection(e, 'story')} className="hover:text-wedding-gold transition-colors cursor-pointer">Story</a>
                 <a href="#accommodations" onClick={(e) => scrollToSection(e, 'accommodations')} className="hover:text-wedding-gold transition-colors cursor-pointer">Stay</a>
                 <a href="#menu" onClick={(e) => scrollToSection(e, 'menu')} className="hover:text-wedding-gold transition-colors cursor-pointer">Menu</a>
@@ -324,6 +326,9 @@ const App: React.FC = () => {
            )}
         </div>
       </section>
+
+      {/* FIND YOUR SEAT */}
+      <FindYourSeat />
 
       {/* GOOD TO KNOW */}
       <section id="good-to-know" className="py-20 bg-wedding-sand/20 scroll-mt-24 border-b border-gray-100">
